@@ -1,0 +1,56 @@
+{
+  "includedFields": [
+    {
+      "fieldName": "timestamp",
+      "fieldType": "datetime"
+    },
+    {
+      "fieldName": "numberOfDeliveries",
+      "fieldType": "int"
+    }
+  ],
+  "streamDef": {
+    "info": "SingleArea",
+    "version": 1,
+    "streams": [
+      {
+        "info": "SingleArea",
+        "source": "file://single_area_job_hourly.csv",
+        "columns": [
+          "*"
+        ]
+      }
+    ],
+    "aggregation": {
+      "hours": 1, 
+      "microseconds": 0, 
+      "seconds": 0, 
+      "fields": [
+        [
+          "timestamp", 
+          "first"
+        ],
+        [
+          "numberOfDeliveries", 
+          "sum"
+        ]
+      ], 
+      "weeks": 0, 
+      "months": 0, 
+      "minutes": 0, 
+      "days": 0, 
+      "milliseconds": 0, 
+      "years": 0
+    }
+  },
+
+  "inferenceType": "TemporalMultiStep",
+  "inferenceArgs": {
+    "predictionSteps": [
+      48
+    ],
+    "predictedField": "numberOfDeliveries"
+  },
+  "iterationCount": -1,
+  "swarmSize": "medium"
+}
