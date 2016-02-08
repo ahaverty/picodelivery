@@ -15,6 +15,7 @@ import ConfigParser
 
 configLocation = "../../config/config.ini"
 config = ConfigParser.ConfigParser()
+config.read(configLocation)
 
 multiplier = config.get('simulator_jobs', 'multiplier')
 minSize = config.get('simulator_jobs', 'minSize')

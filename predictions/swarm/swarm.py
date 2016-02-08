@@ -1,37 +1,16 @@
-#!/usr/bin/env python
-# ----------------------------------------------------------------------
-# Numenta Platform for Intelligent Computing (NuPIC)
-# Copyright (C) 2013, Numenta, Inc.  Unless you have an agreement
-# with Numenta, Inc., for a separate license for this software code, the
-# following terms and conditions apply:
-#
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Affero Public License version 3 as
-# published by the Free Software Foundation.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-# See the GNU Affero Public License for more details.
-#
-# You should have received a copy of the GNU Affero Public License
-# along with this program.  If not, see http://www.gnu.org/licenses.
-#
-# http://numenta.org/licenses/
-# ----------------------------------------------------------------------
 """
-Running a swarm on a file to find the best model/
+Used to create a model for the run program using NuPIC.
+Should be able to dynamically swarm between areas.
+Should be provided with just the areas id number and the rest can be selected from there..
 """
 import os
 import json
 import pprint
 import sys
-import getopt
 import logging
+from nupic.swarming import permutations_runner
 
 logging.basicConfig()
-
-from nupic.swarming import permutations_runner
 
 SWARM_DESCRIPTION = ""
 
@@ -44,76 +23,96 @@ DESCRIPTION = (
 
 def main(argv):
 
-    if len(argv) < 2:
+    if len(argv) < 1:
         printUsageAndExit(2)
     else:
-        descriptionFile = argv[0]
-        dataFile = argv[1]
+        areaId = argv[0]
 
-        if os.path.isfile(descriptionFile) and os.path.isfile(dataFile):
+        areaDirPath = "area_data/area_" + areaId + "/"
+        descriptionFile = "swarm_description_placeholder.json"
+        area_aggregates_filepath = areaDirPath + "area_aggregates_" + areaId + ".csv"
+
+        if not os.path.isfile(area_aggregates_filepath):
+            print "Unable to find aggregate data file at %s" % area_aggregates_filepath
+            printUsageAndExit(3)
+
+        if not os.path.isdir(areaDirPath):
+            print "Unable to find area directory at %s" % areaDirPath
+            printUsageAndExit(4)
+
+        if os.path.isfile(descriptionFile):
             with open(descriptionFile) as data_file:
                 global SWARM_DESCRIPTION
                 SWARM_DESCRIPTION = json.load(data_file)
 
-            swarm(dataFile)
+                print "Altering swarm_description placeholder to use area specific aggregate csv file"
+                SWARM_DESCRIPTION["streamDef"]["streams"][0]["source"] = "file://" + area_aggregates_filepath
+
+            swarm(areaId, areaDirPath)
         else:
             printUsageAndExit(3)
 
+
 def printUsageAndExit(exitCode):
-    print 'Usage: swarm.py path_to_description path_to_data_file'
+    print 'Usage: swarm.py area_id'
     sys.exit(exitCode)
+
 
 def modelParamsToString(modelParams):
     pp = pprint.PrettyPrinter(indent=2)
     return pp.pformat(modelParams)
 
 
-def writeModelParamsToFile(modelParams, name):
-    cleanName = name.replace(" ", "_").replace("-", "_")
-    paramsName = "%s_model_params.py" % cleanName
-    outDir = os.path.join(os.getcwd(), 'model_params')
-    if not os.path.isdir(outDir):
-        os.mkdir(outDir)
-    outPath = os.path.join(os.getcwd(), 'model_params', paramsName)
-    with open(outPath, "wb") as outFile:
-        modelParamsString = modelParamsToString(modelParams)
-        outFile.write("MODEL_PARAMS = \\\n%s" % modelParamsString)
-    return outPath
+def writeModelParamsToFile(modelParams, outputDir):
+    paramsName = "model_params.py"
+    outputFilePath = os.path.join(outputDir, paramsName)
+
+    with open(outputFilePath, "wb") as outFile:
+        modelParamsString = modelParamsToString(modelParams)  # Converting the modelparams to a string
+        outFile.write("MODEL_PARAMS = \\\n%s" % modelParamsString)  # Writing parameter string to the actual file
+
+    return outputFilePath
 
 
-def swarmForBestModelParams(swarmConfig, name, maxWorkers=4):
-    outputLabel = name
-    permWorkDir = os.path.abspath('swarm/' + name)
-    if not os.path.exists(permWorkDir):
-        os.mkdir(permWorkDir)
+def swarmForBestModelParams(swarmConfig, areaDirPath, maxWorkers=4):
+    """
+    Trigger the swarm passing the configuration file to the permutation runner in NuPIC.
+    Also trigger the writing of the resultant model params file
+    """
+    # TODO Check this is correct naming..
+    outputLabel = "model_params"
+
+    # Define where the work will take place (Should be in the area1 folder, in a tmp_work folder?)
+    # Need the path to the area1 folder to do this...
+    permuWorkDir = os.path.abspath(areaDirPath + "tmpWork")
+    outputDir = os.path.abspath(areaDirPath)
+
+    createDirIfNotExisting(permuWorkDir)
+    createDirIfNotExisting(outputDir)
+
     modelParams = permutations_runner.runWithConfig(
         swarmConfig,
         {"maxWorkers": maxWorkers, "overwrite": True},
         outputLabel=outputLabel,
-        outDir=permWorkDir,
-        permWorkDir=permWorkDir)
-    modelParamsFile = writeModelParamsToFile(modelParams, name)
-    return modelParamsFile
+        outDir=outputDir,
+        permWorkDir=permuWorkDir)
+
+    modelParamsFilePath = writeModelParamsToFile(modelParams, outputDir)
+
+    return modelParamsFilePath
 
 
-def printSwarmSizeWarning(size):
-    if size is "small":
-        print "= Small swarms IS A DEBUG SWARM. DON'T EXPECT YOUR MODEL RESULTS TO BE GOOD."
-    elif size is "medium":
-        print "= Medium swarm. Medium swarms could take awhile."
-    else:
-        print "= LARGE SWARM! Large swarms take awhile!"
+def createDirIfNotExisting(dir):
+    if not os.path.exists(dir):
+        os.mkdir(dir)
 
 
-def swarm(filePath):
-    name = os.path.splitext(os.path.basename(filePath))[0]
+def swarm(areaId, areaDirPath):
     print "================================================="
-    print "= Swarming on %s data..." % name
-    printSwarmSizeWarning(SWARM_DESCRIPTION["swarmSize"])
+    print "= Running a " + SWARM_DESCRIPTION["swarmSize"] + " sized swarm for area %s" % areaId
     print "================================================="
-    modelParams = swarmForBestModelParams(SWARM_DESCRIPTION, name)
-    print "\nWrote the following model param files:"
-    print "\t%s" % modelParams
+    modelParamsFilePath = swarmForBestModelParams(SWARM_DESCRIPTION, areaDirPath)
+    print "\nWrote the model param file to %s" % modelParamsFilePath
 
 
 if __name__ == "__main__":

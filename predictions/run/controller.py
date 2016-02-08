@@ -18,8 +18,6 @@ config.read(configLocation)
 
 def main(argv):
 
-    print config.get('host')
-
     if len(argv) < 4:
         printUsageAndExit(2)
     else:

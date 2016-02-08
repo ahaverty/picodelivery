@@ -10,12 +10,12 @@
     }
   ],
   "streamDef": {
-    "info": "SingleArea",
+    "info": "area_aggregates_from_database",
     "version": 1,
     "streams": [
       {
         "info": "SingleArea",
-        "source": "file://single_area_job_hourly.csv",
+        "source": "file://placeholder.csv",
         "columns": [
           "*"
         ]
@@ -47,7 +47,7 @@
   "inferenceType": "TemporalMultiStep",
   "inferenceArgs": {
     "predictionSteps": [
-      48
+      1
     ],
     "predictedField": "numberOfDeliveries"
   },
