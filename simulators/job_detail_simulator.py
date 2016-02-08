@@ -10,21 +10,25 @@ from random import uniform, randrange
 from dateutil import rrule
 from datetime import datetime, timedelta
 import pymysql
+import simulators_sql
+import ConfigParser
 
-import dbconfig
+configLocation = "../../config/config.ini"
+config = ConfigParser.ConfigParser()
 
-from job_frequencies import day as DAY
-from job_frequencies import hour as HOUR
+multiplier = config.get('simulator_jobs', 'multiplier')
+minSize = config.get('simulator_jobs', 'minSize')
+maxSize = config.get('simulator_jobs', 'maxSize')
 
-multiplier = 1
-minSize = 1.3
-maxSize = 1.8
+minVariance = config.get('simulator_jobs', 'minVariance')
+maxVariance = config.get('simulator_jobs', 'maxVariance')
 
-minVariance = 0.8
-maxVariance = 1.2
+minWorth = config.get('simulator_jobs', 'minWorth')
+maxWorth = config.get('simulator_jobs', 'maxWorth')
 
-minWorth = 4
-maxWorth = 8
+frequencyDays = config.get('simulator_jobs', 'frequencyDays')
+frequencyHours = config.get('simulator_jobs', 'frequencyHours')
+
 
 def main(argv):
     connection = getDbConnection()
@@ -50,10 +54,10 @@ def usage(exitCode):
 
 
 def getDbConnection():
-    connection = pymysql.connect(host=dbconfig.host,
-                                 user=dbconfig.user,
-                                 passwd=dbconfig.password,
-                                 db=dbconfig.db,
+    connection = pymysql.connect(host=config.get('database', 'host'),
+                                 user=config.get('database', 'user'),
+                                 passwd=config.get('database', 'password'),
+                                 db=config.get('database', 'db'),
                                  charset='utf8mb4',
                                  cursorclass=pymysql.cursors.DictCursor)
 
@@ -77,7 +81,7 @@ def getRestaurantIdsFromDb(connection):
     restaurantIds = []
 
     with connection.cursor() as cursor:
-        cursor.execute("SELECT id FROM restaurant")
+        cursor.execute(simulators_sql.allRestaurantIds)
 
     row = cursor.fetchone()
     while row:
@@ -89,7 +93,7 @@ def getRestaurantIdsFromDb(connection):
 
 def generateJobCount(size, day, hour):
     # Get a count of jobs using the hour/week graph values and a random multiplier between the min and max ranges
-    return int(round(size * DAY[day] * uniform(minVariance, maxVariance) * HOUR[hour] * multiplier))
+    return int(round(size * frequencyDays[day] * uniform(minVariance, maxVariance) * frequencyHours[hour] * multiplier))
 
 def randomDate(start, end):
     """
@@ -127,21 +131,10 @@ def disperseAndInsertIndividualJobs(connection, restaurantId, startingHour, jobC
     #     # Insert the job instance to the DB
     insertManyJobDetailEntriesToDb(connection, sortedJobInstanceValues)
 
-def insertManyJobDetailEntriesToDb(connection, instanceValues):
-    insertJobDetailSql = "INSERT INTO job_detail " \
-                         "(restaurant_id," \
-                         "status_id," \
-                         "dropoff_address_id," \
-                         "prepaid," \
-                         "payment_due," \
-                         "create_time," \
-                         "pickup_time_requested," \
-                         "package_size," \
-                         "estimated_worth)" \
-                         "VALUES (%s, 1, 6, 1, 0.00, %s, %s, 1, %s)"
 
+def insertManyJobDetailEntriesToDb(connection, instanceValues):
     cursor = connection.cursor()
-    cursor.executemany(insertJobDetailSql, instanceValues)
+    cursor.executemany(simulators_sql.insertJobDetailSql, instanceValues)
     #TODO remove temporary commit from here...
     connection.commit()
 

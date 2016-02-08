@@ -3,10 +3,14 @@ import os
 import run
 import pymysql
 import pymysql.cursors
-import dbconfig
-import sqlstatements
+import predictions_run_sql
 import controller
+import ConfigParser
 from datetime import timedelta
+
+configLocation = "../../config/config.ini"
+config = ConfigParser.ConfigParser()
+config.read(configLocation)
 
 '''
 Purpose:
@@ -15,7 +19,7 @@ Trigger the run (and swarm?) of all the data in the db
 Run on data that has yet to be predicted upon using a select (already done in controller??)
 '''
 
-usage="Usage: predictions-trigger.py steps modelParamsPathRoot savedModelsPathRoot"
+usage = "Usage: predictions-trigger.py steps modelParamsPathRoot savedModelsPathRoot"
 
 
 def main(argv):
@@ -31,7 +35,7 @@ def main(argv):
 
     for area in areaIds:
         print "running for area id #" + str(area)
-	argv = [area, steps, modelParamsPath, savedModelsPath]
+        argv = [area, steps, modelParamsPath, savedModelsPath]
         controller.main(argv)
 
 def printUsageAndExit(exitCode):
@@ -39,10 +43,10 @@ def printUsageAndExit(exitCode):
     sys.exit(exitCode)
 
 def getDbConnection():
-    connection = pymysql.connect(host=dbconfig.host,
-                                 user=dbconfig.user,
-                                 passwd=dbconfig.password,
-                                 db=dbconfig.db,
+    connection = pymysql.connect(host=config.get('database', 'host'),
+                                 user=config.get('database', 'user'),
+                                 passwd=config.get('database', 'password'),
+                                 db=config.get('database', 'db'),
                                  charset='utf8mb4',
                                  cursorclass=pymysql.cursors.DictCursor)
 
@@ -54,8 +58,7 @@ def getAreaIdsFromDatabase():
 
     try:
         with connection.cursor() as cursor:
-            # Get rows that that yet have predictions
-            cursor.execute(sqlstatements.areaIds)
+            cursor.execute(predictions_run_sql.areaIds)
 
             row = cursor.fetchone()
             while row:

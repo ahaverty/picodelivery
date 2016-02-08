@@ -3,16 +3,23 @@ import os
 import run
 import pymysql
 import pymysql.cursors
-import dbconfig
-import sqlstatements
+import ConfigParser
+import predictions_run_sql
 from datetime import timedelta
 
-usage="Usage: controller.py areaId steps modelParamsPathRoot savedModelsPathRoot"
+usage = "Usage: controller.py areaId steps modelParamsPathRoot savedModelsPathRoot"
 countOfJobs = "countOfJobs"
 startHour = "startHour"
 
+configLocation = "../../config/config.ini"
+config = ConfigParser.ConfigParser()
+config.read(configLocation)
+
 
 def main(argv):
+
+    print config.get('host')
+
     if len(argv) < 4:
         printUsageAndExit(2)
     else:
@@ -27,12 +34,15 @@ def main(argv):
 
         runOnLatestData(areaId, steps, absPathAndVerify(modelParamsPath), absPath(savedModelsPath))
 
+
 def printUsageAndExit(exitCode):
     print usage
     sys.exit(exitCode)
 
+
 def absPath(path):
     return str(os.path.abspath(path))
+
 
 def absPathAndVerify(path):
     absolutePath = absPath(path)
@@ -42,6 +52,7 @@ def absPathAndVerify(path):
         print "%s is not an absolute path that exists. Exiting controller.py." % absolutePath
         exit(3)
 
+
 def runOnLatestData(areaId, steps, modelParamsPath, savedModelsPath):
 
     # Initialise nupic/run.py
@@ -50,7 +61,7 @@ def runOnLatestData(areaId, steps, modelParamsPath, savedModelsPath):
     #Commit prediction to the database
     try:
         connection = getDbConnection()
-        rowsWithoutPredictions = getRowsWithoutPredictions(connection, steps, areaId)
+        rowsWithoutPredictions = getRowsWithoutPredictions(connection, areaId)
 
         for row in rowsWithoutPredictions:
             predictedHour = row[startHour] + timedelta(hours=steps)
@@ -66,29 +77,29 @@ def runOnLatestData(areaId, steps, modelParamsPath, savedModelsPath):
     # Save the model once complete
     nupic.saveModel()
 
+
 def getDbConnection():
-    connection = pymysql.connect(host=dbconfig.host,
-                                 user=dbconfig.user,
-                                 passwd=dbconfig.password,
-                                 db=dbconfig.db,
+    connection = pymysql.connect(host=config.get('database', 'host'),
+                                 user=config.get('database', 'user'),
+                                 passwd=config.get('database', 'password'),
+                                 db=config.get('database', 'db'),
                                  charset='utf8mb4',
                                  cursorclass=pymysql.cursors.DictCursor)
-
     return connection
+
 
 def savePredictionToDatabase(connection, areaId, startHour, predictedValue):
     with connection.cursor() as cursor:
-        cursor.execute(sqlstatements.insertPredictionResult, (areaId, startHour, float(predictedValue)))
+        cursor.execute(predictions_run_sql.insertPredictionResult, (areaId, startHour, float(predictedValue)))
 
 
-
-def getRowsWithoutPredictions(connection, steps, areaId):
+def getRowsWithoutPredictions(connection, areaId):
     rowsWithoutPredictions = []
 
     try:
         with connection.cursor() as cursor:
             # Get rows that that yet have predictions
-            cursor.execute(sqlstatements.rowsWithoutPredictions, (steps, areaId, areaId))
+            cursor.execute(predictions_run_sql.rowsWithoutPredictions, areaId)
 
             row = cursor.fetchone()
             while row:
@@ -103,6 +114,7 @@ def getRowsWithoutPredictions(connection, steps, areaId):
         connection.close()
 
     return rowsWithoutPredictions
+
 
 if __name__ == "__main__":
     main(sys.argv[1:])
