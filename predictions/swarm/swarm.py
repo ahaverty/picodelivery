@@ -28,9 +28,9 @@ def main(argv):
     else:
         areaId = argv[0]
 
-        areaDirPath = "area_data/area_" + areaId + "/"
+        areaDirPath = "area_data/area_" + str(areaId) + "/"
         descriptionFile = "swarm_description_placeholder.json"
-        area_aggregates_filepath = areaDirPath + "area_aggregates_" + areaId + ".csv"
+        area_aggregates_filepath = areaDirPath + "area_aggregates_" + str(areaId) + ".csv"
 
         if not os.path.isfile(area_aggregates_filepath):
             print "Unable to find aggregate data file at %s" % area_aggregates_filepath
@@ -109,7 +109,7 @@ def createDirIfNotExisting(dir):
 
 def swarm(areaId, areaDirPath):
     print "================================================="
-    print "= Running a " + SWARM_DESCRIPTION["swarmSize"] + " sized swarm for area %s" % areaId
+    print "= Running a %s sized swarm for area %s" % (SWARM_DESCRIPTION["swarmSize"], areaId)
     print "================================================="
     modelParamsFilePath = swarmForBestModelParams(SWARM_DESCRIPTION, areaDirPath)
     print "\nWrote the model param file to %s" % modelParamsFilePath

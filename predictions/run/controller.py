@@ -21,7 +21,7 @@ import subprocess
 import predictions_run_sql
 from datetime import timedelta
 
-usage = "Usage: controller.py areaId steps modelParamsPathRoot savedModelsPathRoot"
+usage = "Usage: controller.py areaId"
 countOfJobs = "countOfJobs"
 startHour = "startHour"
 
@@ -35,15 +35,20 @@ def main(argv):
     # TODO Change the parameters to be more defined, similar to how swarm.py is done...
     # TODO Perhaps just areaId is needed at this stage...
 
-    if len(argv) < 4:
+    if len(argv) < 1:
         printUsageAndExit(2)
     else:
         try:
             areaId = int(argv[0])
-            steps = int(argv[1])
+            steps = 1  # TODO Hardcoding steps, need to make a decision later
+            #
+            # modelParamsPath = argv[2] + "/area" + str(areaId) + "_model_params.py"
+            # savedModelsPath = argv[3] + "/" + str(areaId)
 
-            modelParamsPath = argv[2] + "/area" + str(areaId) + "_model_params.py"
-            savedModelsPath = argv[3] + "/" + str(areaId)
+            # TODO Check if this should have the python .py extension or not...
+            modelParamsPath = "../swarm/area_data/area_" + str(areaId) + "/model_params"
+            savedModelsPath = "../swarm/area_data/area_" + str(areaId) + "/saved_model/"
+
         except Exception:
             printUsageAndExit(3)
 
@@ -59,7 +64,7 @@ def main(argv):
             # Publish that the swarm process is complete
             publishSwarmingStatusToDb(connection, areaId, False)
         else:
-            print("Another process is currently swarming on area with id: " + areaId)
+            print("Another process is currently swarming on area with id: %s" % areaId)
             print("Therefore exiting controller.py")
             exit(10)
 
@@ -86,7 +91,7 @@ def absPathAndVerify(path):
 
 def modelsParamExists(areaId):
     # TODO define this path better, somewhere more visible...
-    modelParamExpectedPath = "../swarm/area_data/area_" + areaId + "/model_params.py"
+    modelParamExpectedPath = "../swarm/area_data/area_" + str(areaId) + "/model_params.py"
     # TODO Check that this does not have to be absolute/ is working as expected...
     return os.path.isfile(modelParamExpectedPath)
 
@@ -121,7 +126,7 @@ def triggerSwarmAndWait(areaId):
     print "Adding details of the instantiated swarm process to the database" \
           " to ensure no overlapping processes start."
 
-    cmd = ['python ../swarm/swarm.py ' + areaId]
+    cmd = ['python ../swarm/swarm.py ' + str(areaId)]
     swarmProcess = subprocess.Popen(cmd)
 
     print "Swarm process successfully started, currently waiting on swarm to complete (May take awhile)..."

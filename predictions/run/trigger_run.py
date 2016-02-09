@@ -16,17 +16,14 @@ configLocation = "../../config/config.ini"
 config = ConfigParser.ConfigParser()
 config.read(configLocation)
 
-usage = "Usage: predictions-trigger.py steps modelParamsPathRoot savedModelsPathRoot"
+usage = "Usage: predictions-trigger.py"
 
 
 def main(argv):
-    if len(argv) < 3:
+    if len(argv) < 1:
         printUsageAndExit(2)
     else:
         steps = int(argv[0])
-
-        modelParamsPath = str(argv[1])
-        savedModelsPath = str(argv[2])
 
     areaIds = getAreaIdsFromDatabase()
 
@@ -34,7 +31,7 @@ def main(argv):
         print "running for area id #" + str(area)
         # argv = [area, steps, modelParamsPath, savedModelsPath]
         # run each controller in the background/carry on once called
-        subprocess.Popen(['python controller.py', area, steps, modelParamsPath, savedModelsPath])
+        subprocess.Popen(['python controller.py', area])
         # controller.main(argv)
 
 def printUsageAndExit(exitCode):
