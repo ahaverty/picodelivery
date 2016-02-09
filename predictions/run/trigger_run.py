@@ -16,14 +16,10 @@ configLocation = "../../config/config.ini"
 config = ConfigParser.ConfigParser()
 config.read(configLocation)
 
-usage = "Usage: predictions-trigger.py"
+usage = "Usage: trigger_run.py"
 
 
 def main(argv):
-    if len(argv) < 1:
-        printUsageAndExit(2)
-    else:
-        steps = int(argv[0])
 
     areaIds = getAreaIdsFromDatabase()
 
