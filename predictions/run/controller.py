@@ -98,8 +98,8 @@ def modelsParamExists(areaId):
 
 def currentlySwarmingOnArea(connection, areaId):
     currentlySwarming = False
-    with connection.cursor() as cursor:
-        cursor.execute(predictions_run_sql.swarmingForAreaCheck, areaId)
+    cursor = connection.cursor()
+    cursor.execute(predictions_run_sql.swarmingForAreaCheck, areaId)
 
     row = cursor.fetchone()
     if row is not None:
@@ -126,7 +126,7 @@ def triggerSwarmAndWait(areaId):
     print "Adding details of the instantiated swarm process to the database" \
           " to ensure no overlapping processes start."
 
-    cmd = ['python ../swarm/swarm.py ' + str(areaId)]
+    cmd = ['python ../swarm/swarm.py ', str(areaId)]
     swarmProcess = subprocess.Popen(cmd)
 
     print "Swarm process successfully started, currently waiting on swarm to complete (May take awhile)..."

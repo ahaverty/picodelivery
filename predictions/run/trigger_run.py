@@ -27,7 +27,7 @@ def main(argv):
         print "running for area id #" + str(area)
         # argv = [area, steps, modelParamsPath, savedModelsPath]
         # run each controller in the background/carry on once called
-        subprocess.Popen(['python controller.py', area])
+        subprocess.Popen(['python controller.py', str(area)])
         # controller.main(argv)
 
 def printUsageAndExit(exitCode):
