@@ -16,14 +16,10 @@ configLocation = "../../config/config.ini"
 config = ConfigParser.ConfigParser()
 config.read(configLocation)
 
-usage = "Usage: predictions-trigger.py"
+usage = "Usage: trigger_run.py"
 
 
 def main(argv):
-    if len(argv) < 1:
-        printUsageAndExit(2)
-    else:
-        steps = int(argv[0])
 
     areaIds = getAreaIdsFromDatabase()
 
@@ -53,14 +49,14 @@ def getAreaIdsFromDatabase():
     connection = getDbConnection()
 
     try:
-        with connection.cursor() as cursor:
-            cursor.execute(predictions_run_sql.areaIds)
+        cursor = connection.cursor()
+        cursor.execute(predictions_run_sql.areaIds)
+
+        row = cursor.fetchone()
+        while row:
+            areaIds.append(row['id'])
 
             row = cursor.fetchone()
-            while row:
-                areaIds.append(row['id'])
-
-                row = cursor.fetchone()
     finally:
         connection.close()
 
