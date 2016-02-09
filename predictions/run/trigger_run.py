@@ -1,23 +1,20 @@
+"""
+Purpose:
+Instantiated hourly
+Trigger the run (or swarm if no modelparams exists)
+for each area and its data (only its past unpredicted data) in the db
+"""
+
 import sys
-import os
-import run
 import pymysql
 import pymysql.cursors
 import predictions_run_sql
-import controller
 import ConfigParser
-from datetime import timedelta
+import subprocess
 
 configLocation = "../../config/config.ini"
 config = ConfigParser.ConfigParser()
 config.read(configLocation)
-
-'''
-Purpose:
-Called every hour using a crontab
-Trigger the run (and swarm?) of all the data in the db
-Run on data that has yet to be predicted upon using a select (already done in controller??)
-'''
 
 usage = "Usage: predictions-trigger.py steps modelParamsPathRoot savedModelsPathRoot"
 
@@ -35,8 +32,10 @@ def main(argv):
 
     for area in areaIds:
         print "running for area id #" + str(area)
-        argv = [area, steps, modelParamsPath, savedModelsPath]
-        controller.main(argv)
+        # argv = [area, steps, modelParamsPath, savedModelsPath]
+        # run each controller in the background/carry on once called
+        subprocess.Popen(['python controller.py', area, steps, modelParamsPath, savedModelsPath])
+        # controller.main(argv)
 
 def printUsageAndExit(exitCode):
     print usage
