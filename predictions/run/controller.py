@@ -35,15 +35,14 @@ def main(argv):
     # TODO Change the parameters to be more defined, similar to how swarm.py is done...
     # TODO Perhaps just areaId is needed at this stage...
 
+    print "Starting controller.py"
+
     if len(argv) < 1:
         printUsageAndExit(2)
     else:
         try:
             areaId = int(argv[0])
             steps = 1  # TODO Hardcoding steps, need to make a decision later
-            #
-            # modelParamsPath = argv[2] + "/area" + str(areaId) + "_model_params.py"
-            # savedModelsPath = argv[3] + "/" + str(areaId)
 
             # TODO Check if this should have the python .py extension or not...
             modelParamsPath = "../swarm/area_data/area_" + str(areaId) + "/model_params"
@@ -117,8 +116,8 @@ def publishSwarmingStatusToDb(connection, areaId, status):
     else:
         inProgress = 0
 
-    with connection.cursor() as cursor:
-        cursor.execute(predictions_run_sql.insertSwarmingForAreaRecord, areaId, inProgress)
+    cursor = connection.cursor()
+    cursor.execute(predictions_run_sql.insertSwarmingForAreaRecord, areaId, inProgress)
 
 
 def triggerSwarmAndWait(areaId):
@@ -171,27 +170,27 @@ def getDbConnection():
 
 
 def savePredictionToDatabase(connection, areaId, startHour, predictedValue):
-    with connection.cursor() as cursor:
-        cursor.execute(predictions_run_sql.insertPredictionResult, (areaId, startHour, float(predictedValue)))
+    cursor = connection.cursor()
+    cursor.execute(predictions_run_sql.insertPredictionResult, (areaId, startHour, float(predictedValue)))
 
 
 def getRowsWithoutPredictions(connection, areaId):
     rowsWithoutPredictions = []
 
     try:
-        with connection.cursor() as cursor:
-            # Get rows that that yet have predictions
-            cursor.execute(predictions_run_sql.rowsWithoutPredictions, areaId)
+        cursor = connection.cursor()
+        # Get rows that that yet have predictions
+        cursor.execute(predictions_run_sql.rowsWithoutPredictions, areaId)
+
+        row = cursor.fetchone()
+        while row:
+            aggregatedJobRow = {
+                countOfJobs: row['count_of_jobs'],
+                startHour: row['start_hour']
+            }
+            rowsWithoutPredictions.append(aggregatedJobRow)
 
             row = cursor.fetchone()
-            while row:
-                aggregatedJobRow = {
-                    countOfJobs: row['count_of_jobs'],
-                    startHour: row['start_hour']
-                }
-                rowsWithoutPredictions.append(aggregatedJobRow)
-
-                row = cursor.fetchone()
     finally:
         connection.close()
 
