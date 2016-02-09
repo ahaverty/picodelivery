@@ -126,8 +126,8 @@ def triggerSwarmAndWait(areaId):
     print "Adding details of the instantiated swarm process to the database" \
           " to ensure no overlapping processes start."
 
-    cmd = ['python ../swarm/swarm.py ', str(areaId)]
-    swarmProcess = subprocess.Popen(cmd)
+    cmd = ["python ../swarm/swarm.py " + str(areaId)]
+    swarmProcess = subprocess.Popen(cmd, shell=True)
 
     print "Swarm process successfully started, currently waiting on swarm to complete (May take awhile)..."
 
