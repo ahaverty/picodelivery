@@ -145,12 +145,14 @@ def generateAggregateDataFileAndStructure(connection, areaId):
 
     f = open(dataFilepath, 'w')
 
-    row = cursor.fetchone()
-    while row:
-        f.write("%s, %s" % (row['timestamp'], row['numberOfDeliveries']))  # TODO Double check that the column names conform to the union as I expect here...
+    try:
         row = cursor.fetchone()
-
-    f.close()
+        while row:
+            f.write("%s, %s\n" % (row['timestamp'], row['numberOfDeliveries']))  # TODO Double check that the column names conform to the union as I expect here...
+            row = cursor.fetchone()
+    finally:
+        f.close()
+        print "Created aggregate file at %s" % dataFilepath
 
 
 def triggerSwarmAndWait(areaId):
@@ -167,12 +169,12 @@ def triggerSwarmAndWait(areaId):
     # swarmProcess terminates.
     while swarmProcess.poll() is None:
         l = swarmProcess.stdout.readline()  # This blocks until it receives a newline.
-        print "swarm.py:" + l
+        print "[swarm.py]: " + l
     # When the subprocess terminates there might be unconsumed output
     # that still needs to be processed.
     print swarmProcess.stdout.read()
 
-    #swarmProcess.wait()  # TODO May not need the wait here, although probably harmless..
+    # TODO implement better error handling and checking exit code..
 
     print "Swarm on area %s completed." % areaId
 

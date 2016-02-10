@@ -17,7 +17,11 @@ insertSwarmingForAreaRecord = "INSERT INTO swarm " \
                               "VALUES (%s, %s)"
 
 areasAggregates = "SELECT 'timestamp','numberOfDeliveries' " \
-                 "UNION " \
-                 "SELECT start_hour, count_of_jobs " \
-                 "FROM aggregate_hourly_jobs " \
-                 "WHERE area_id = %s"
+                  "UNION " \
+                  "SELECT 'datetime', 'int' " \
+                  "UNION " \
+                  "SELECT 'T','' " \
+                  "UNION " \
+                  "SELECT start_hour, count_of_jobs " \
+                  "FROM aggregate_hourly_jobs " \
+                  "WHERE area_id = %s"
