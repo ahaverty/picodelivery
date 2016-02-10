@@ -6,10 +6,10 @@ insertPredictionResult = "INSERT INTO hourly_prediction " \
 
 areaIds = "SELECT id FROM area"
 
-swarmingForAreaCheck = "SELECT in_progress" \
-                       "FROM swarm" \
-                       "WHERE area_id = %s" \
-                       "ORDER BY row_created DESC" \
+swarmingForAreaCheck = "SELECT in_progress " \
+                       "FROM swarm " \
+                       "WHERE area_id = %s " \
+                       "ORDER BY row_created DESC " \
                        "LIMIT 1"
 
 insertSwarmingForAreaRecord = "INSERT INTO swarm " \

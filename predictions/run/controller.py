@@ -35,8 +35,7 @@ def main(argv):
     # TODO Change the parameters to be more defined, similar to how swarm.py is done...
     # TODO Perhaps just areaId is needed at this stage...
 
-    print "Starting controller.py"
-
+    
     if len(argv) < 1:
         printUsageAndExit(2)
     else:
@@ -98,7 +97,7 @@ def modelsParamExists(areaId):
 def currentlySwarmingOnArea(connection, areaId):
     currentlySwarming = False
     cursor = connection.cursor()
-    cursor.execute(predictions_run_sql.swarmingForAreaCheck, areaId)
+    cursor.execute(predictions_run_sql.swarmingForAreaCheck, (areaId))
 
     row = cursor.fetchone()
     if row is not None:
@@ -117,7 +116,9 @@ def publishSwarmingStatusToDb(connection, areaId, status):
         inProgress = 0
 
     cursor = connection.cursor()
-    cursor.execute(predictions_run_sql.insertSwarmingForAreaRecord, areaId, inProgress)
+    
+    print "Adding swarm record to db for area %s, as %s" % (areaId, status)
+    cursor.execute(predictions_run_sql.insertSwarmingForAreaRecord, (areaId, inProgress))
 
 
 def triggerSwarmAndWait(areaId):
