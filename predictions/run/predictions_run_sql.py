@@ -15,3 +15,9 @@ swarmingForAreaCheck = "SELECT in_progress " \
 insertSwarmingForAreaRecord = "INSERT INTO swarm " \
                               "(area_id, in_progress) " \
                               "VALUES (%s, %s)"
+
+areasAggregates = "SELECT 'timestamp','numberOfDeliveries' " \
+                 "UNION " \
+                 "SELECT start_hour, count_of_jobs " \
+                 "FROM aggregate_hourly_jobs " \
+                 "WHERE area_id = %s"
