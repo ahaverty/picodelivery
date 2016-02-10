@@ -52,11 +52,15 @@ def main(argv):
 
     connection = getDbConnection()
 
+    print "Enabling autocommit, to ensure swarming status can be read across instances of controller.py"
+    connection.autocommit(True)
+
     if not modelsParamExists(areaId):
         if not currentlySwarmingOnArea(connection, areaId):
             # Publish that the swarm process has begun
             publishSwarmingStatusToDb(connection, areaId, True)
 
+            generateAggregateDataFileAndStructure(connection, areaId)
             triggerSwarmAndWait(areaId)
 
             # Publish that the swarm process is complete
@@ -67,6 +71,9 @@ def main(argv):
             exit(10)
 
     runOnLatestData(connection, areaId, steps, absPathAndVerify(modelParamsPath), absPath(savedModelsPath))
+
+    connection.commit()
+    connection.close()
 
 
 def printUsageAndExit(exitCode):
@@ -121,6 +128,31 @@ def publishSwarmingStatusToDb(connection, areaId, status):
     cursor.execute(predictions_run_sql.insertSwarmingForAreaRecord, (areaId, inProgress))
 
 
+def generateAggregateDataFileAndStructure(connection, areaId):
+    """
+    Generate the csv file used for swarming, from the mysql db for the specified areaId
+    Also setup the folder structure if not already created
+    :return:
+    """
+    cursor = connection.cursor()
+    cursor.execute(predictions_run_sql.areasAggregates, areaId)
+
+    areaDir = "../swarm/area_data/area_" + str(areaId) + "/"
+    dataFilepath = areaDir + "area_" + str(areaId) + "_aggregates.csv"
+
+    if not os.path.exists(areaDir):
+        os.makedirs(areaDir)
+
+    f = open(dataFilepath, 'w')
+
+    row = cursor.fetchone()
+    while row:
+        f.write("%s, %s" % (row['timestamp'], row['numberOfDeliveries']))  # TODO Double check that the column names conform to the union as I expect here...
+        row = cursor.fetchone()
+
+    f.close()
+
+
 def triggerSwarmAndWait(areaId):
     print "Starting swarm process on area with id %s, which may take awhile." % areaId
     print "Adding details of the instantiated swarm process to the database" \
@@ -131,7 +163,16 @@ def triggerSwarmAndWait(areaId):
 
     print "Swarm process successfully started, currently waiting on swarm to complete (May take awhile)..."
 
-    swarmProcess.wait()
+    # Grab stdout line by line as it becomes available.  This will loop until
+    # swarmProcess terminates.
+    while swarmProcess.poll() is None:
+        l = swarmProcess.stdout.readline() # This blocks until it receives a newline.
+        print "swarm.py:" + l
+    # When the subprocess terminates there might be unconsumed output
+    # that still needs to be processed.
+    print swarmProcess.stdout.read()
+
+    swarmProcess.wait()  # TODO May not need the wait here, although probably harmless..
 
     print "Swarm on area %s completed." % areaId
 
@@ -153,11 +194,8 @@ def runOnLatestData(connection, areaId, steps, modelParamsPath, savedModelsPath)
 
             savePredictionToDatabase(connection, areaId, predictedHour, predictedCountOfJobs)
     finally:
-        connection.commit()
-        connection.close()
-
-    # Save the model once complete
-    nupic.saveModel()
+        # Save the model once complete
+        nupic.saveModel()
 
 
 def getDbConnection():
