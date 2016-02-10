@@ -9,7 +9,7 @@ areaIds = "SELECT id FROM area"
 swarmingForAreaCheck = "SELECT in_progress " \
                        "FROM swarm " \
                        "WHERE area_id = %s " \
-                       "ORDER BY row_created DESC " \
+                       "ORDER BY id DESC " \
                        "LIMIT 1"
 
 insertSwarmingForAreaRecord = "INSERT INTO swarm " \

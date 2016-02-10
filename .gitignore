@@ -5,6 +5,7 @@ __pycache__/
 *$py.class
 
 /config/config.ini
+/predictions/swarm/area_data/
 # C extensions
 *.so
 

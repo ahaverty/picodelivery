@@ -30,7 +30,7 @@ def main(argv):
 
         areaDirPath = "area_data/area_" + str(areaId) + "/"
         descriptionFile = "swarm_description_placeholder.json"
-        area_aggregates_filepath = areaDirPath + "area_aggregates_" + str(areaId) + ".csv"
+        area_aggregates_filepath = areaDirPath + "area_" + str(areaId) + "_aggregates.csv"
 
         if not os.path.isfile(area_aggregates_filepath):
             print "Unable to find aggregate data file at %s" % area_aggregates_filepath
