@@ -1,7 +1,7 @@
-from distutils.core import setup
+from setuptools import setup, find_packages
 
 setup(
     name='PicoDelivery',
     version='0.1dev',
-    packages=['picodelivery','configuration'],
+    packages=find_packages(),
 )

@@ -10,13 +10,13 @@ import sys
 from configuration import predictions_run_sql
 from picodelivery import logger, configHelper, databaseHelper
 
-config = configHelper.getConfig("../configuration/project_config.ini")
+config = configHelper.getConfig("../project_config.ini")
 log = logger.setupCustomLogger(__name__)
 
 usage = "Usage: trigger_run.py"
 
 def main(argv):
-    connection = databaseHelper.getDbConnection(configHelper)
+    connection = databaseHelper.getDbConnection(config)
     areaIds = getAreaIdsFromDatabase(connection)
 
     for area in areaIds:
@@ -25,6 +25,9 @@ def main(argv):
         # run each controller in the background/carry on once called
         subprocess.Popen('python controller.py ' + str(area), shell=True)
         # controller.main(argv)
+    log.info("Exiting trigger_run.py, subprocesses may still be running in the background...")
+    exit()
+
 
 def printUsageAndExit(exitCode):
     print usage
