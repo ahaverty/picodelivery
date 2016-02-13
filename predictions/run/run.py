@@ -1,10 +1,12 @@
 import os
 import imp
+import logger
 
 from nupic.frameworks.opf.metrics import MetricSpec
 from nupic.frameworks.opf.modelfactory import ModelFactory
 from nupic.frameworks.opf.predictionmetricsmanager import MetricsManager
 
+log = logger.setupCustomLogger(__name__)
 
 class Run(object):
 
@@ -42,7 +44,7 @@ class Run(object):
         return metricSpecs
 
     def getModelParams(self):
-        print "Importing model params from %s" % self.modelParamsPath
+        log.info("Importing model params from %s" % self.modelParamsPath)
         moduleName = os.path.basename(self.modelParamsPath)
         importedModelParams = imp.load_source(moduleName, self.modelParamsPath)
         return importedModelParams.MODEL_PARAMS
@@ -50,10 +52,10 @@ class Run(object):
     def getModel(self):
         #Check if the dir is empty
         if os.path.exists(self.savedModelsPath) and os.listdir(self.savedModelsPath) :
-            print "Loading model from checkpoint %s" % self.savedModelsPath
+            log.info( "Loading model from checkpoint %s" % self.savedModelsPath)
             model = ModelFactory.loadFromCheckpoint(self.savedModelsPath)
         else:
-            print "Creating model from %s..." % self.modelParamsPath
+            log.info( "Creating model from %s..." % self.modelParamsPath)
             model = self.createModelFromParams(self.getModelParams())
 
         return model
@@ -71,5 +73,5 @@ class Run(object):
         return prediction
 
     def saveModel(self):
-        print "Saving model to %s..." % self.savedModelsPath
+        log.info( "Saving model to %s..." % self.savedModelsPath)
         self.model.save(self.savedModelsPath)
