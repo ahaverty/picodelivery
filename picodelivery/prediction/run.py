@@ -6,8 +6,8 @@ from nupic.frameworks.opf.modelfactory import ModelFactory
 from nupic.frameworks.opf.predictionmetricsmanager import MetricsManager
 
 from picodelivery import logger
+log = logger.setupCustomLogger("run.py")
 
-log = logger.setupCustomLogger(__name__)
 
 class Run(object):
 

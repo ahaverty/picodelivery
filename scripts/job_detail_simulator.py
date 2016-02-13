@@ -29,8 +29,6 @@ maxWorth = float(configHelper.get('simulator_jobs', 'maxWorth'))
 frequencyDays = configHelper.get('simulator_jobs', 'frequencyDays').split(', ')
 frequencyHours = configHelper.get('simulator_jobs', 'frequencyHours').split(', ')
 
-log = logger.setupCustomLogger(__name__)
-
 def main(argv):
     
     if len(argv) < 2:
@@ -140,4 +138,5 @@ def insertManyJobDetailEntriesToDb(connection, instanceValues):
 
 
 if __name__ == "__main__":
+    log = logger.setupCustomLogger(sys.argv[0])
     main(sys.argv[1:])

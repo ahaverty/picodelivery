@@ -12,8 +12,6 @@ from nupic.swarming import permutations_runner
 
 from picodelivery import logger
 
-log = logger.setupCustomLogger(__name__)
-
 SWARM_DESCRIPTION = ""
 
 DESCRIPTION = (
@@ -120,5 +118,5 @@ def swarm(areaId, areaDirPath):
 
 
 if __name__ == "__main__":
-    # print DESCRIPTION
+    log = logger.setupCustomLogger(sys.argv[0])
     main(sys.argv[1:])

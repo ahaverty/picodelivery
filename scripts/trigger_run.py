@@ -11,8 +11,6 @@ from configuration import predictions_run_sql
 from picodelivery import logger, configHelper, databaseHelper
 
 config = configHelper.getConfig("../project_config.ini")
-log = logger.setupCustomLogger(__name__)
-
 usage = "Usage: trigger_run.py"
 
 def main(argv):
@@ -53,4 +51,5 @@ def getAreaIdsFromDatabase(connection):
     return areaIds
 
 if __name__ == "__main__":
+    log = logger.setupCustomLogger(sys.argv[0])
     main(sys.argv[1:])

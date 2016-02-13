@@ -26,8 +26,6 @@ startHour = "startHour"
 
 config = configHelper.getConfig("../project_config.ini")
 
-log = logger.setupCustomLogger(__name__)
-
 
 def main(argv):
 
@@ -227,4 +225,5 @@ def getRowsWithoutPredictions(connection, areaId):
 
 
 if __name__ == "__main__":
+    log = logger.setupCustomLogger(sys.argv[0])
     main(sys.argv[1:])
