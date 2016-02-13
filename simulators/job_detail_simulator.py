@@ -13,25 +13,29 @@ import pymysql
 import simulators_sql
 import ConfigParser
 
-configLocation = "../../config/config.ini"
+configLocation = "../config/config.ini"
 config = ConfigParser.ConfigParser()
 config.read(configLocation)
 
-multiplier = config.get('simulator_jobs', 'multiplier')
-minSize = config.get('simulator_jobs', 'minSize')
-maxSize = config.get('simulator_jobs', 'maxSize')
+multiplier = float(config.get('simulator_jobs', 'multiplier'))
+minSize = float(config.get('simulator_jobs', 'minSize'))
+maxSize = float(config.get('simulator_jobs', 'maxSize'))
 
-minVariance = config.get('simulator_jobs', 'minVariance')
-maxVariance = config.get('simulator_jobs', 'maxVariance')
+minVariance = float(config.get('simulator_jobs', 'minVariance'))
+maxVariance = float(config.get('simulator_jobs', 'maxVariance'))
 
-minWorth = config.get('simulator_jobs', 'minWorth')
-maxWorth = config.get('simulator_jobs', 'maxWorth')
+minWorth = float(config.get('simulator_jobs', 'minWorth'))
+maxWorth = float(config.get('simulator_jobs', 'maxWorth'))
 
-frequencyDays = config.get('simulator_jobs', 'frequencyDays')
-frequencyHours = config.get('simulator_jobs', 'frequencyHours')
+frequencyDays = config.get('simulator_jobs', 'frequencyDays').split(', ')
+frequencyHours = config.get('simulator_jobs', 'frequencyHours').split(', ')
 
 
 def main(argv):
+    
+    if len(argv) < 2:
+	usage(2)
+
     connection = getDbConnection()
 
     fromDate = datetime.strptime(argv[0], '%Y-%m-%d')
@@ -49,8 +53,8 @@ def main(argv):
 
 
 def usage(exitCode):
-    # TODO
-    pass
+    print "Usage: job_detail_simulator.py fromdate(YYYY-mm-dd) todate(YYYY-mm-dd)"
+    print "Error, exiting..."
     exit(exitCode)
 
 
@@ -81,8 +85,8 @@ def createJobDetailEntriesForRestaurant(connection, restaurantId, fromDate, toDa
 def getRestaurantIdsFromDb(connection):
     restaurantIds = []
 
-    with connection.cursor() as cursor:
-        cursor.execute(simulators_sql.allRestaurantIds)
+    cursor = connection.cursor()
+    cursor.execute(simulators_sql.allRestaurantIds)
 
     row = cursor.fetchone()
     while row:
@@ -94,7 +98,7 @@ def getRestaurantIdsFromDb(connection):
 
 def generateJobCount(size, day, hour):
     # Get a count of jobs using the hour/week graph values and a random multiplier between the min and max ranges
-    return int(round(size * frequencyDays[day] * uniform(minVariance, maxVariance) * frequencyHours[hour] * multiplier))
+    return int(round(size * float(frequencyDays[day]) * uniform(minVariance, maxVariance) * float(frequencyHours[hour]) * multiplier))
 
 def randomDate(start, end):
     """

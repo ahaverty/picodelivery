@@ -44,7 +44,7 @@ def main(argv):
             steps = 1  # TODO Hardcoding steps, need to make a decision later
 
             # TODO Check if this should have the python .py extension or not...
-            modelParamsPath = "../swarm/area_data/area_" + str(areaId) + "/model_params"
+            modelParamsPath = "../swarm/area_data/area_" + str(areaId) + "/model_params.py"
             savedModelsPath = "../swarm/area_data/area_" + str(areaId) + "/saved_model/"
 
         except Exception:
@@ -218,22 +218,19 @@ def savePredictionToDatabase(connection, areaId, startHour, predictedValue):
 def getRowsWithoutPredictions(connection, areaId):
     rowsWithoutPredictions = []
 
-    try:
-        cursor = connection.cursor()
-        # Get rows that that yet have predictions
-        cursor.execute(predictions_run_sql.rowsWithoutPredictions, areaId)
+    cursor = connection.cursor()
+    # Get rows that that yet have predictions
+    cursor.execute(predictions_run_sql.rowsWithoutPredictions, areaId)
+
+    row = cursor.fetchone()
+    while row:
+        aggregatedJobRow = {
+            countOfJobs: row['count_of_jobs'],
+            startHour: row['start_hour']
+        }
+        rowsWithoutPredictions.append(aggregatedJobRow)
 
         row = cursor.fetchone()
-        while row:
-            aggregatedJobRow = {
-                countOfJobs: row['count_of_jobs'],
-                startHour: row['start_hour']
-            }
-            rowsWithoutPredictions.append(aggregatedJobRow)
-
-            row = cursor.fetchone()
-    finally:
-        connection.close()
 
     return rowsWithoutPredictions
 
