@@ -1,12 +1,21 @@
 import logging
+import os
+import time
+import datetime
+st = datetime.datetime.fromtimestamp(time.time()).strftime('%Y%m%d%H%M%S')
 
 
 def setupCustomLogger(name):
     logger = logging.getLogger(name)
     logger.setLevel(logging.INFO)
+    
+    directory = "logs"
 
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+    
     # create a file handler
-    handler = logging.FileHandler(name + '.log')
+    handler = logging.FileHandler('logs/' + name + '_' + st + '.log')
     handler.setLevel(logging.INFO)
 
     # create a logging format
@@ -16,3 +25,4 @@ def setupCustomLogger(name):
     # add the handlers to the logger
     logger.addHandler(handler)
     return logger
+

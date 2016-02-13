@@ -4,6 +4,7 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+*nohup.out
 /project_config.ini
 /area_data/*
 # C extensions

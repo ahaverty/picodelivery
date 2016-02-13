@@ -30,8 +30,8 @@ def main(argv):
 	
 	realDir = os.path.dirname(os.path.realpath(__file__)) + "/"
 	
-        areaDirPath = realDir + "area_data/area_" + str(areaId) + "/"
-        descriptionFile = realDir + "swarm_description_placeholder.json"
+        areaDirPath = realDir + "../area_data/area_" + str(areaId) + "/"
+        descriptionFile = realDir + "../configuration/swarm_description_placeholder.json"
         area_aggregates_filepath = areaDirPath + "area_" + str(areaId) + "_aggregates.csv"
 
         if not os.path.isfile(area_aggregates_filepath):
@@ -52,7 +52,7 @@ def main(argv):
 
             swarm(areaId, areaDirPath)
         else:
-            printUsageAndExit(3)
+            printUsageAndExit(5)
 
 
 def printUsageAndExit(exitCode):

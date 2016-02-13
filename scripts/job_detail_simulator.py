@@ -16,25 +16,25 @@ from picodelivery import logger, configHelper, databaseHelper
 
 config = configHelper.getConfig("../project_config.ini")
 
-multiplier = float(configHelper.get('simulator_jobs', 'multiplier'))
-minSize = float(configHelper.get('simulator_jobs', 'minSize'))
-maxSize = float(configHelper.get('simulator_jobs', 'maxSize'))
+multiplier = float(config.get('simulator_jobs', 'multiplier'))
+minSize = float(config.get('simulator_jobs', 'minSize'))
+maxSize = float(config.get('simulator_jobs', 'maxSize'))
 
-minVariance = float(configHelper.get('simulator_jobs', 'minVariance'))
-maxVariance = float(configHelper.get('simulator_jobs', 'maxVariance'))
+minVariance = float(config.get('simulator_jobs', 'minVariance'))
+maxVariance = float(config.get('simulator_jobs', 'maxVariance'))
 
-minWorth = float(configHelper.get('simulator_jobs', 'minWorth'))
-maxWorth = float(configHelper.get('simulator_jobs', 'maxWorth'))
+minWorth = float(config.get('simulator_jobs', 'minWorth'))
+maxWorth = float(config.get('simulator_jobs', 'maxWorth'))
 
-frequencyDays = configHelper.get('simulator_jobs', 'frequencyDays').split(', ')
-frequencyHours = configHelper.get('simulator_jobs', 'frequencyHours').split(', ')
+frequencyDays = config.get('simulator_jobs', 'frequencyDays').split(', ')
+frequencyHours = config.get('simulator_jobs', 'frequencyHours').split(', ')
 
 def main(argv):
     
     if len(argv) < 2:
         usage(2)
 
-    connection = databaseHelper.getDbConnection()
+    connection = databaseHelper.getDbConnection(config)
 
     fromDate = datetime.strptime(argv[0], '%Y-%m-%d')
     # TODO possibly use the second argument to define how many days to insert from the fromDate..
