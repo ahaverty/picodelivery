@@ -6,6 +6,7 @@ Restaurants should probably differ in size, set a restaurant with a size between
 '''
 
 import sys
+import logger
 from random import uniform, randrange
 from dateutil import rrule
 from datetime import datetime, timedelta
@@ -30,11 +31,12 @@ maxWorth = float(config.get('simulator_jobs', 'maxWorth'))
 frequencyDays = config.get('simulator_jobs', 'frequencyDays').split(', ')
 frequencyHours = config.get('simulator_jobs', 'frequencyHours').split(', ')
 
+log = logger.setupCustomLogger(__name__)
 
 def main(argv):
     
     if len(argv) < 2:
-	usage(2)
+        usage(2)
 
     connection = getDbConnection()
 
@@ -43,18 +45,24 @@ def main(argv):
     toDate = datetime.strptime(argv[1], '%Y-%m-%d')
     # TODO maybe limit the max days allowed to avoid any mistakes when passing in dates...
 
+    log.info("Beginning simulator with parameters: %s - %s" % (fromDate, toDate))
+
     restaurantIds = getRestaurantIdsFromDb(connection)
 
     for restaurantId in restaurantIds:
         createJobDetailEntriesForRestaurant(connection, restaurantId, fromDate, toDate)
 
+    log.info("Committing and closing connection with database.")
     connection.commit()
     connection.close()
+
+
 
 
 def usage(exitCode):
     print "Usage: job_detail_simulator.py fromdate(YYYY-mm-dd) todate(YYYY-mm-dd)"
     print "Error, exiting..."
+    log.error("Exiting program with exit code %s" % exitCode)
     exit(exitCode)
 
 
@@ -76,7 +84,7 @@ def createJobDetailEntriesForRestaurant(connection, restaurantId, fromDate, toDa
     # Iterate through each hour between the dates, generating a job count and inserting
     for dt in rrule.rrule(rrule.HOURLY, dtstart=fromDate, until=toDate):
         jobCountForHour = generateJobCount(size, dt.weekday(), dt.hour)
-        print "#" + str(restaurantId) + " - " + str(dt) + " job count: " + str(jobCountForHour)
+        log.debug("#" + str(restaurantId) + " - " + str(dt) + " job count: " + str(jobCountForHour))
 
         # Will need to randomly disperse the amount of orders first and create individual instances..
         disperseAndInsertIndividualJobs(connection, restaurantId, dt, jobCountForHour)
@@ -140,8 +148,6 @@ def disperseAndInsertIndividualJobs(connection, restaurantId, startingHour, jobC
 def insertManyJobDetailEntriesToDb(connection, instanceValues):
     cursor = connection.cursor()
     cursor.executemany(simulators_sql.insertJobDetailSql, instanceValues)
-    #TODO remove temporary commit from here...
-    connection.commit()
 
 
 if __name__ == "__main__":

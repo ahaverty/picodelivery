@@ -6,6 +6,7 @@ for each area and its data (only its past unpredicted data) in the db
 """
 
 import sys
+import logger
 import pymysql
 import pymysql.cursors
 import predictions_run_sql
@@ -18,13 +19,14 @@ config.read(configLocation)
 
 usage = "Usage: trigger_run.py"
 
+log = logger.setupCustomLogger(__name__)
 
 def main(argv):
 
     areaIds = getAreaIdsFromDatabase()
 
     for area in areaIds:
-        print "running for area id #" + str(area)
+        log.info( "running for area id #" + str(area))
         # argv = [area, steps, modelParamsPath, savedModelsPath]
         # run each controller in the background/carry on once called
         subprocess.Popen('python controller.py ' + str(area), shell=True)
@@ -32,6 +34,7 @@ def main(argv):
 
 def printUsageAndExit(exitCode):
     print usage
+    log.error("Exiting program with exit code %s" % exitCode)
     sys.exit(exitCode)
 
 def getDbConnection():

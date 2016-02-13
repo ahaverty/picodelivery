@@ -13,6 +13,7 @@ Check whether modelparams exists for an area
 
 import sys
 import os
+import logger
 import run
 import pymysql
 import pymysql.cursors
@@ -28,6 +29,8 @@ startHour = "startHour"
 configLocation = "../../config/config.ini"
 config = ConfigParser.ConfigParser()
 config.read(configLocation)
+
+log = logger.setupCustomLogger(__name__)
 
 
 def main(argv):
@@ -66,18 +69,20 @@ def main(argv):
             # Publish that the swarm process is complete
             publishSwarmingStatusToDb(connection, areaId, False)
         else:
-            print("Another process is currently swarming on area with id: %s" % areaId)
-            print("Therefore exiting controller.py")
-            exit(10)
+            log.warning("Another process is currently swarming on area with id: %s" % areaId)
+            log.warning("Therefore exiting controller.py")
+            sys.exit(10)
 
     runOnLatestData(connection, areaId, steps, absPathAndVerify(modelParamsPath), absPath(savedModelsPath))
 
+    log.info("Committing and closing the database connection.")
     connection.commit()
     connection.close()
 
 
 def printUsageAndExit(exitCode):
     print usage
+    log.error("Exiting program with exit code %s" % exitCode)
     sys.exit(exitCode)
 
 
@@ -124,7 +129,7 @@ def publishSwarmingStatusToDb(connection, areaId, status):
 
     cursor = connection.cursor()
     
-    print "Adding swarm record to db for area %s, as %s" % (areaId, status)
+    log.info( "Adding swarm record to db for area %s, as %s" % (areaId, status))
     cursor.execute(predictions_run_sql.insertSwarmingForAreaRecord, (areaId, inProgress))
 
 
@@ -152,31 +157,31 @@ def generateAggregateDataFileAndStructure(connection, areaId):
             row = cursor.fetchone()
     finally:
         f.close()
-        print "Created aggregate file at %s" % dataFilepath
+        log.info( "Created aggregate file at %s" % dataFilepath)
 
 
 def triggerSwarmAndWait(areaId):
-    print "Starting swarm process on area with id %s, which may take awhile." % areaId
-    print "Adding details of the instantiated swarm process to the database" \
-          " to ensure no overlapping processes start."
+    log.info("Starting swarm process on area with id %s, which may take awhile." % areaId)
+    log.info( "Adding details of the instantiated swarm process to the database" \
+          " to ensure no overlapping processes start.")
 
     cmd = ["python ../swarm/swarm.py " + str(areaId)]
     swarmProcess = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
 
-    print "Swarm process successfully started, currently waiting on swarm to complete (May take awhile)..."
+    log.info( "Swarm process successfully started, currently waiting on swarm to complete (May take awhile)...")
 
     # Grab stdout line by line as it becomes available.  This will loop until
     # swarmProcess terminates.
     while swarmProcess.poll() is None:
         l = swarmProcess.stdout.readline()  # This blocks until it receives a newline.
-        print "[swarm.py]: " + l
+        log.info( "[swarm.py]: " + l)
     # When the subprocess terminates there might be unconsumed output
     # that still needs to be processed.
     print swarmProcess.stdout.read()
 
     # TODO implement better error handling and checking exit code..
 
-    print "Swarm on area %s completed." % areaId
+    log.info( "Swarm on area %s completed." % areaId)
 
 
 def runOnLatestData(connection, areaId, steps, modelParamsPath, savedModelsPath):
@@ -184,7 +189,6 @@ def runOnLatestData(connection, areaId, steps, modelParamsPath, savedModelsPath)
     # Initialise nupic/run.py
     nupic = run.Run(modelParamsPath, savedModelsPath, steps)
 
-    #Commit prediction to the database
     try:
         rowsWithoutPredictions = getRowsWithoutPredictions(connection, areaId)
 
@@ -192,11 +196,12 @@ def runOnLatestData(connection, areaId, steps, modelParamsPath, savedModelsPath)
             predictedHour = row[startHour] + timedelta(hours=steps)
             predictedCountOfJobs = nupic.predict(row[startHour], row[countOfJobs])
 
-            print("row@StartHour:{}\tPredictedHour:{}\trow@CountOfJobs:{}\tPredictedCountOfJobs:{}".format(row[startHour], predictedHour, row[countOfJobs], predictedCountOfJobs))
+            log.debug("row@StartHour:{}\tPredictedHour:{}\trow@CountOfJobs:{}\tPredictedCountOfJobs:{}".format(row[startHour], predictedHour, row[countOfJobs], predictedCountOfJobs))
 
             savePredictionToDatabase(connection, areaId, predictedHour, predictedCountOfJobs)
     finally:
         # Save the model once complete
+        log.info("Saving the nupic model to file.")
         nupic.saveModel()
 
 

@@ -7,10 +7,10 @@ import os
 import json
 import pprint
 import sys
-import logging
+import logger
 from nupic.swarming import permutations_runner
 
-logging.basicConfig()
+log = logger.setupCustomLogger(__name__)
 
 SWARM_DESCRIPTION = ""
 
@@ -35,11 +35,11 @@ def main(argv):
         area_aggregates_filepath = areaDirPath + "area_" + str(areaId) + "_aggregates.csv"
 
         if not os.path.isfile(area_aggregates_filepath):
-            print "Unable to find aggregate data file at %s" % area_aggregates_filepath
+            log.error("Unable to find aggregate data file at %s" % area_aggregates_filepath)
             printUsageAndExit(3)
 
         if not os.path.isdir(areaDirPath):
-            print "Unable to find area directory at %s" % areaDirPath
+            log.error("Unable to find area directory at %s" % areaDirPath)
             printUsageAndExit(4)
 
         if os.path.isfile(descriptionFile):
@@ -47,7 +47,7 @@ def main(argv):
                 global SWARM_DESCRIPTION
                 SWARM_DESCRIPTION = json.load(data_file)
 
-                print "Altering swarm_description placeholder to use area specific aggregate csv file"
+                log.info("Altering swarm_description placeholder to use area specific aggregate csv file")
                 SWARM_DESCRIPTION["streamDef"]["streams"][0]["source"] = "file://" + area_aggregates_filepath
 
             swarm(areaId, areaDirPath)
@@ -57,6 +57,7 @@ def main(argv):
 
 def printUsageAndExit(exitCode):
     print 'Usage: swarm.py area_id'
+    log.error("Exiting program with exit code %s" % exitCode)
     sys.exit(exitCode)
 
 
@@ -110,11 +111,10 @@ def createDirIfNotExisting(dir):
 
 
 def swarm(areaId, areaDirPath):
-    print "================================================="
-    print "= Running a %s sized swarm for area %s" % (SWARM_DESCRIPTION["swarmSize"], areaId)
-    print "================================================="
+    log.info("Running a %s sized swarm for area %s" % (SWARM_DESCRIPTION["swarmSize"], areaId))
+
     modelParamsFilePath = swarmForBestModelParams(SWARM_DESCRIPTION, areaDirPath)
-    print "\nWrote the model param file to %s" % modelParamsFilePath
+    log.info("Wrote the model param file to %s" % modelParamsFilePath)
 
 
 if __name__ == "__main__":
