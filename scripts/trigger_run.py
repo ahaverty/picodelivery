@@ -5,27 +5,19 @@ Trigger the run (or swarm if no modelparams exists)
 for each area and its data (only its past unpredicted data) in the db
 """
 
-import ConfigParser
 import subprocess
 import sys
+from configuration import predictions_run_sql
+from picodelivery import logger, config, databaseHelper
 
-import pymysql
-import pymysql.cursors
-
-import predictions_run_sql
-from picodelivery import logger
-
-configLocation = "../../config/config.ini"
-config = ConfigParser.ConfigParser()
-config.read(configLocation)
+config = config.getConfig("../configuration/project_config.ini")
+log = logger.setupCustomLogger(__name__)
 
 usage = "Usage: trigger_run.py"
 
-log = logger.setupCustomLogger(__name__)
-
 def main(argv):
-
-    areaIds = getAreaIdsFromDatabase()
+    connection = databaseHelper.getDbConnection(config)
+    areaIds = getAreaIdsFromDatabase(connection)
 
     for area in areaIds:
         log.info( "running for area id #" + str(area))
@@ -39,19 +31,9 @@ def printUsageAndExit(exitCode):
     log.error("Exiting program with exit code %s" % exitCode)
     sys.exit(exitCode)
 
-def getDbConnection():
-    connection = pymysql.connect(host=config.get('database', 'host'),
-                                 user=config.get('database', 'user'),
-                                 passwd=config.get('database', 'password'),
-                                 db=config.get('database', 'db'),
-                                 charset='utf8mb4',
-                                 cursorclass=pymysql.cursors.DictCursor)
 
-    return connection
-
-def getAreaIdsFromDatabase():
+def getAreaIdsFromDatabase(connection):
     areaIds = []
-    connection = getDbConnection()
 
     try:
         cursor = connection.cursor()

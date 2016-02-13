@@ -11,26 +11,20 @@ Check whether modelparams exists for an area
             then go back and look for model params again
 """
 
-import ConfigParser
 import os
 import subprocess
 import sys
 from datetime import timedelta
 
-import pymysql
-import pymysql.cursors
-
-import predictions_run_sql
-import run
-from picodelivery import logger
+import picodelivery.prediction.run
+from configuration import predictions_run_sql
+from picodelivery import logger, config, databaseHelper
 
 usage = "Usage: controller.py areaId"
 countOfJobs = "countOfJobs"
 startHour = "startHour"
 
-configLocation = "../../config/config.ini"
-config = ConfigParser.ConfigParser()
-config.read(configLocation)
+config = config.getConfig("../configuration/project_config.ini")
 
 log = logger.setupCustomLogger(__name__)
 
@@ -55,7 +49,7 @@ def main(argv):
         except Exception:
             printUsageAndExit(3)
 
-    connection = getDbConnection()
+    connection = databaseHelper.getDbConnection(config)
 
     print "Enabling autocommit, to ensure swarming status can be read across instances of controller.py"
     connection.autocommit(True)
@@ -155,7 +149,7 @@ def generateAggregateDataFileAndStructure(connection, areaId):
     try:
         row = cursor.fetchone()
         while row:
-            f.write("%s, %s\n" % (row['timestamp'], row['numberOfDeliveries']))  # TODO Double check that the column names conform to the union as I expect here...
+            f.write("%s, %s\n" % (row['timestamp'], row['numberOfDeliveries']))
             row = cursor.fetchone()
     finally:
         f.close()
@@ -189,7 +183,7 @@ def triggerSwarmAndWait(areaId):
 def runOnLatestData(connection, areaId, steps, modelParamsPath, savedModelsPath):
 
     # Initialise nupic/run.py
-    nupic = run.Run(modelParamsPath, savedModelsPath, steps)
+    nupic = picodelivery.prediction.run.Run(modelParamsPath, savedModelsPath, steps)
 
     try:
         rowsWithoutPredictions = getRowsWithoutPredictions(connection, areaId)
@@ -205,16 +199,6 @@ def runOnLatestData(connection, areaId, steps, modelParamsPath, savedModelsPath)
         # Save the model once complete
         log.info("Saving the nupic model to file.")
         nupic.saveModel()
-
-
-def getDbConnection():
-    connection = pymysql.connect(host=config.get('database', 'host'),
-                                 user=config.get('database', 'user'),
-                                 passwd=config.get('database', 'password'),
-                                 db=config.get('database', 'db'),
-                                 charset='utf8mb4',
-                                 cursorclass=pymysql.cursors.DictCursor)
-    return connection
 
 
 def savePredictionToDatabase(connection, areaId, startHour, predictedValue):

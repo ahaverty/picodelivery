@@ -4,8 +4,8 @@ __pycache__/
 *.py[cod]
 *$py.class
 
-/config/config.ini
-/picodelivery/predictions/swarm/area_data/
+/configuration/project_config.ini
+/area_data/*
 # C extensions
 *.so
 

@@ -5,20 +5,16 @@ Use an array for the range of jobs that should be created for each hour/day (1 a
 Restaurants should probably differ in size, set a restaurant with a size between some range and multiply the amount of jobs by it? 1 - 2 (Shouldn't change for the restaurant once set!!!!)
 '''
 
-import ConfigParser
 import sys
 from datetime import datetime, timedelta
 from random import uniform, randrange
 
-import pymysql
 from dateutil import rrule
 
-import simulators_sql
-from picodelivery import logger
+from configuration import simulators_sql
+from picodelivery import logger, config, databaseHelper
 
-configLocation = "../config/config.ini"
-config = ConfigParser.ConfigParser()
-config.read(configLocation)
+config = config.getConfig("../configuration/project_config.ini")
 
 multiplier = float(config.get('simulator_jobs', 'multiplier'))
 minSize = float(config.get('simulator_jobs', 'minSize'))
@@ -40,7 +36,7 @@ def main(argv):
     if len(argv) < 2:
         usage(2)
 
-    connection = getDbConnection()
+    connection = databaseHelper.getDbConnection()
 
     fromDate = datetime.strptime(argv[0], '%Y-%m-%d')
     # TODO possibly use the second argument to define how many days to insert from the fromDate..
@@ -66,17 +62,6 @@ def usage(exitCode):
     print "Error, exiting..."
     log.error("Exiting program with exit code %s" % exitCode)
     exit(exitCode)
-
-
-def getDbConnection():
-    connection = pymysql.connect(host=config.get('database', 'host'),
-                                 user=config.get('database', 'user'),
-                                 passwd=config.get('database', 'password'),
-                                 db=config.get('database', 'db'),
-                                 charset='utf8mb4',
-                                 cursorclass=pymysql.cursors.DictCursor)
-
-    return connection
 
 
 def createJobDetailEntriesForRestaurant(connection, restaurantId, fromDate, toDate):
@@ -110,6 +95,7 @@ def generateJobCount(size, day, hour):
     # Get a count of jobs using the hour/week graph values and a random multiplier between the min and max ranges
     return int(round(size * float(frequencyDays[day]) * uniform(minVariance, maxVariance) * float(frequencyHours[hour]) * multiplier))
 
+
 def randomDate(start, end):
     """
     This function will return a random datetime between two datetime objects.
@@ -118,6 +104,7 @@ def randomDate(start, end):
     int_delta = (delta.days * 24 * 60 * 60) + delta.seconds
     random_second = randrange(int_delta)
     return start + timedelta(seconds=random_second)
+
 
 def disperseAndInsertIndividualJobs(connection, restaurantId, startingHour, jobCountForHour):
     '''
