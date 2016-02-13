@@ -11,16 +11,18 @@ Check whether modelparams exists for an area
             then go back and look for model params again
 """
 
-import sys
+import ConfigParser
 import os
-import logger
-import run
+import subprocess
+import sys
+from datetime import timedelta
+
 import pymysql
 import pymysql.cursors
-import ConfigParser
-import subprocess
+
 import predictions_run_sql
-from datetime import timedelta
+import run
+from picodelivery import logger
 
 usage = "Usage: controller.py areaId"
 countOfJobs = "countOfJobs"

@@ -5,14 +5,16 @@ Use an array for the range of jobs that should be created for each hour/day (1 a
 Restaurants should probably differ in size, set a restaurant with a size between some range and multiply the amount of jobs by it? 1 - 2 (Shouldn't change for the restaurant once set!!!!)
 '''
 
-import sys
-import logger
-from random import uniform, randrange
-from dateutil import rrule
-from datetime import datetime, timedelta
-import pymysql
-import simulators_sql
 import ConfigParser
+import sys
+from datetime import datetime, timedelta
+from random import uniform, randrange
+
+import pymysql
+from dateutil import rrule
+
+import simulators_sql
+from picodelivery import logger
 
 configLocation = "../config/config.ini"
 config = ConfigParser.ConfigParser()

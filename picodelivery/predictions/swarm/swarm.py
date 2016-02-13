@@ -3,12 +3,14 @@ Used to create a model for the run program using NuPIC.
 Should be able to dynamically swarm between areas.
 Should be provided with just the areas id number and the rest can be selected from there..
 """
-import os
 import json
+import os
 import pprint
 import sys
-import logger
+
 from nupic.swarming import permutations_runner
+
+from picodelivery import logger
 
 log = logger.setupCustomLogger(__name__)
 

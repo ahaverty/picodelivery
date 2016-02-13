@@ -1,10 +1,11 @@
-import os
 import imp
-import logger
+import os
 
 from nupic.frameworks.opf.metrics import MetricSpec
 from nupic.frameworks.opf.modelfactory import ModelFactory
 from nupic.frameworks.opf.predictionmetricsmanager import MetricsManager
+
+from picodelivery import logger
 
 log = logger.setupCustomLogger(__name__)
 

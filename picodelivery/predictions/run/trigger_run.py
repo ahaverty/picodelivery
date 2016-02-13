@@ -5,13 +5,15 @@ Trigger the run (or swarm if no modelparams exists)
 for each area and its data (only its past unpredicted data) in the db
 """
 
-import sys
-import logger
-import pymysql
-import pymysql.cursors
-import predictions_run_sql
 import ConfigParser
 import subprocess
+import sys
+
+import pymysql
+import pymysql.cursors
+
+import predictions_run_sql
+from picodelivery import logger
 
 configLocation = "../../config/config.ini"
 config = ConfigParser.ConfigParser()
