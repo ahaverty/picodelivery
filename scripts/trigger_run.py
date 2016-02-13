@@ -8,15 +8,15 @@ for each area and its data (only its past unpredicted data) in the db
 import subprocess
 import sys
 from configuration import predictions_run_sql
-from picodelivery import logger, config, databaseHelper
+from picodelivery import logger, configHelper, databaseHelper
 
-config = config.getConfig("../configuration/project_config.ini")
+config = configHelper.getConfig("../configuration/project_config.ini")
 log = logger.setupCustomLogger(__name__)
 
 usage = "Usage: trigger_run.py"
 
 def main(argv):
-    connection = databaseHelper.getDbConnection(config)
+    connection = databaseHelper.getDbConnection(configHelper)
     areaIds = getAreaIdsFromDatabase(connection)
 
     for area in areaIds:

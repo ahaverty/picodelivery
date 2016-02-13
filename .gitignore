@@ -4,7 +4,7 @@ __pycache__/
 *.py[cod]
 *$py.class
 
-/configuration/project_config.ini
+/project_config.ini
 /area_data/*
 # C extensions
 *.so

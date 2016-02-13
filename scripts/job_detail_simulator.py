@@ -12,22 +12,22 @@ from random import uniform, randrange
 from dateutil import rrule
 
 from configuration import simulators_sql
-from picodelivery import logger, config, databaseHelper
+from picodelivery import logger, configHelper, databaseHelper
 
-config = config.getConfig("../configuration/project_config.ini")
+config = configHelper.getConfig("../project_config.ini")
 
-multiplier = float(config.get('simulator_jobs', 'multiplier'))
-minSize = float(config.get('simulator_jobs', 'minSize'))
-maxSize = float(config.get('simulator_jobs', 'maxSize'))
+multiplier = float(configHelper.get('simulator_jobs', 'multiplier'))
+minSize = float(configHelper.get('simulator_jobs', 'minSize'))
+maxSize = float(configHelper.get('simulator_jobs', 'maxSize'))
 
-minVariance = float(config.get('simulator_jobs', 'minVariance'))
-maxVariance = float(config.get('simulator_jobs', 'maxVariance'))
+minVariance = float(configHelper.get('simulator_jobs', 'minVariance'))
+maxVariance = float(configHelper.get('simulator_jobs', 'maxVariance'))
 
-minWorth = float(config.get('simulator_jobs', 'minWorth'))
-maxWorth = float(config.get('simulator_jobs', 'maxWorth'))
+minWorth = float(configHelper.get('simulator_jobs', 'minWorth'))
+maxWorth = float(configHelper.get('simulator_jobs', 'maxWorth'))
 
-frequencyDays = config.get('simulator_jobs', 'frequencyDays').split(', ')
-frequencyHours = config.get('simulator_jobs', 'frequencyHours').split(', ')
+frequencyDays = configHelper.get('simulator_jobs', 'frequencyDays').split(', ')
+frequencyHours = configHelper.get('simulator_jobs', 'frequencyHours').split(', ')
 
 log = logger.setupCustomLogger(__name__)
 

@@ -18,13 +18,13 @@ from datetime import timedelta
 
 import picodelivery.prediction.run
 from configuration import predictions_run_sql
-from picodelivery import logger, config, databaseHelper
+from picodelivery import logger, configHelper, databaseHelper
 
 usage = "Usage: controller.py areaId"
 countOfJobs = "countOfJobs"
 startHour = "startHour"
 
-config = config.getConfig("../configuration/project_config.ini")
+config = configHelper.getConfig("../project_config.ini")
 
 log = logger.setupCustomLogger(__name__)
 
@@ -43,8 +43,8 @@ def main(argv):
             steps = 1  # TODO Hardcoding steps, need to make a decision later
 
             # TODO Check if this should have the python .py extension or not...
-            modelParamsPath = "../swarm/area_data/area_" + str(areaId) + "/model_params.py"
-            savedModelsPath = "../swarm/area_data/area_" + str(areaId) + "/saved_model/"
+            modelParamsPath = "../area_data/area_" + str(areaId) + "/model_params.py"
+            savedModelsPath = "../area_data/area_" + str(areaId) + "/saved_model/"
 
         except Exception:
             printUsageAndExit(3)
@@ -97,7 +97,7 @@ def absPathAndVerify(path):
 
 def modelsParamExists(areaId):
     # TODO define this path better, somewhere more visible...
-    modelParamExpectedPath = "../swarm/area_data/area_" + str(areaId) + "/model_params.py"
+    modelParamExpectedPath = "../area_data/area_" + str(areaId) + "/model_params.py"
     # TODO Check that this does not have to be absolute/ is working as expected...
     return os.path.isfile(modelParamExpectedPath)
 
@@ -138,7 +138,7 @@ def generateAggregateDataFileAndStructure(connection, areaId):
     cursor = connection.cursor()
     cursor.execute(predictions_run_sql.areasAggregates, areaId)
 
-    areaDir = "../swarm/area_data/area_" + str(areaId) + "/"
+    areaDir = "../area_data/area_" + str(areaId) + "/"
     dataFilepath = areaDir + "area_" + str(areaId) + "_aggregates.csv"
 
     if not os.path.exists(areaDir):
@@ -161,7 +161,7 @@ def triggerSwarmAndWait(areaId):
     log.info( "Adding details of the instantiated swarm process to the database" \
           " to ensure no overlapping processes start.")
 
-    cmd = ["python ../swarm/swarm.py " + str(areaId)]
+    cmd = ["python swarm.py " + str(areaId)]
     swarmProcess = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
 
     log.info( "Swarm process successfully started, currently waiting on swarm to complete (May take awhile)...")
