@@ -5,6 +5,7 @@ Trigger the run (or swarm if no modelparams exists)
 for each area and its data (only its past unpredicted data) in the db
 """
 
+import os
 import subprocess
 import sys
 from configuration import predictions_run_sql
@@ -51,5 +52,5 @@ def getAreaIdsFromDatabase(connection):
     return areaIds
 
 if __name__ == "__main__":
-    log = logger.setupCustomLogger(sys.argv[0])
+    log = logger.setupCustomLogger(os.path.basename(__file__))
     main(sys.argv[1:])

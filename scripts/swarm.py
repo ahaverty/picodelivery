@@ -28,31 +28,31 @@ def main(argv):
     else:
         areaId = argv[0]
 	
-	realDir = os.path.dirname(os.path.realpath(__file__)) + "/"
-	
-        areaDirPath = realDir + "../area_data/area_" + str(areaId) + "/"
-        descriptionFile = realDir + "../configuration/swarm_description_placeholder.json"
-        area_aggregates_filepath = areaDirPath + "area_" + str(areaId) + "_aggregates.csv"
+    realDir = os.path.dirname(os.path.realpath(__file__)) + "/"
 
-        if not os.path.isfile(area_aggregates_filepath):
-            log.error("Unable to find aggregate data file at %s" % area_aggregates_filepath)
-            printUsageAndExit(3)
+    areaDirPath = realDir + "../area_data/area_" + str(areaId) + "/"
+    descriptionFile = realDir + "../configuration/swarm_description_placeholder.json"
+    area_aggregates_filepath = areaDirPath + "area_" + str(areaId) + "_aggregates.csv"
 
-        if not os.path.isdir(areaDirPath):
-            log.error("Unable to find area directory at %s" % areaDirPath)
-            printUsageAndExit(4)
+    if not os.path.isfile(area_aggregates_filepath):
+        log.error("Unable to find aggregate data file at %s" % area_aggregates_filepath)
+        printUsageAndExit(3)
 
-        if os.path.isfile(descriptionFile):
-            with open(descriptionFile) as data_file:
-                global SWARM_DESCRIPTION
-                SWARM_DESCRIPTION = json.load(data_file)
+    if not os.path.isdir(areaDirPath):
+        log.error("Unable to find area directory at %s" % areaDirPath)
+        printUsageAndExit(4)
 
-                log.info("Altering swarm_description placeholder to use area specific aggregate csv file")
-                SWARM_DESCRIPTION["streamDef"]["streams"][0]["source"] = "file://" + area_aggregates_filepath
+    if os.path.isfile(descriptionFile):
+        with open(descriptionFile) as data_file:
+            global SWARM_DESCRIPTION
+            SWARM_DESCRIPTION = json.load(data_file)
 
-            swarm(areaId, areaDirPath)
-        else:
-            printUsageAndExit(5)
+            log.info("Altering swarm_description placeholder to use area specific aggregate csv file")
+            SWARM_DESCRIPTION["streamDef"]["streams"][0]["source"] = "file://" + area_aggregates_filepath
+
+        swarm(areaId, areaDirPath)
+    else:
+        printUsageAndExit(5)
 
 
 def printUsageAndExit(exitCode):
@@ -118,5 +118,5 @@ def swarm(areaId, areaDirPath):
 
 
 if __name__ == "__main__":
-    log = logger.setupCustomLogger(sys.argv[0])
+    log = logger.setupCustomLogger(os.path.basename(__file__))
     main(sys.argv[1:])

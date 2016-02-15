@@ -6,6 +6,7 @@ Restaurants should probably differ in size, set a restaurant with a size between
 '''
 
 import sys
+import os
 from datetime import datetime, timedelta
 from random import uniform, randrange
 
@@ -134,9 +135,15 @@ def disperseAndInsertIndividualJobs(connection, restaurantId, startingHour, jobC
 
 def insertManyJobDetailEntriesToDb(connection, instanceValues):
     cursor = connection.cursor()
-    cursor.executemany(simulators_sql.insertJobDetailSql, instanceValues)
-
+    
+    try:
+    	cursor.executemany(simulators_sql.insertJobDetailSql, instanceValues)
+    except Exception as e:
+	log.exception("executemany() raised an exeption..")
+	log.error("Rolling back")
+	connection.rollback()
+	sys.exit(10)
 
 if __name__ == "__main__":
-    log = logger.setupCustomLogger(sys.argv[0])
+    log = logger.setupCustomLogger(os.path.basename(__file__))
     main(sys.argv[1:])
