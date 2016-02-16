@@ -27,12 +27,16 @@ def main(argv):
         printUsageAndExit(2)
     else:
         areaId = argv[0]
-	
+
     realDir = os.path.dirname(os.path.realpath(__file__)) + "/"
+    descriptionFile = realDir + "../configuration/swarm_description_placeholder.json"
 
     areaDirPath = realDir + "../area_data/area_" + str(areaId) + "/"
-    descriptionFile = realDir + "../configuration/swarm_description_placeholder.json"
     area_aggregates_filepath = areaDirPath + "area_" + str(areaId) + "_aggregates.csv"
+
+    area_stream_def_info_name = "area_" + str(areaId) + "_stream_def"
+    area_stream_info_name = "area_" + str(areaId) + "_stream"
+    area_stream__source = "file://" + area_aggregates_filepath
 
     if not os.path.isfile(area_aggregates_filepath):
         log.error("Unable to find aggregate data file at %s" % area_aggregates_filepath)
@@ -47,8 +51,14 @@ def main(argv):
             global SWARM_DESCRIPTION
             SWARM_DESCRIPTION = json.load(data_file)
 
-            log.info("Altering swarm_description placeholder to use area specific aggregate csv file")
-            SWARM_DESCRIPTION["streamDef"]["streams"][0]["source"] = "file://" + area_aggregates_filepath
+            log.info("Altering swarm_description placeholder to use area specific data.")
+            log.info("== Using streamDef.info: " + area_stream_def_info_name)
+            log.info("== Using streamDef.streams.0.info: " + area_stream_info_name)
+            log.info("== Using streamDef.streams.0.source: " + area_stream__source)
+
+            SWARM_DESCRIPTION["streamDef"]["info"] = area_stream_def_info_name
+            SWARM_DESCRIPTION["streamDef"]["streams"][0]["info"] = area_stream_info_name
+            SWARM_DESCRIPTION["streamDef"]["streams"][0]["source"] = area_stream__source
 
         swarm(areaId, areaDirPath)
     else:
@@ -77,7 +87,7 @@ def writeModelParamsToFile(modelParams, outputDir):
     return outputFilePath
 
 
-def swarmForBestModelParams(swarmConfig, areaDirPath, maxWorkers=4):
+def swarmForBestModelParams(swarmConfig, areaDirPath, areaId, maxWorkers=4):
     """
     Trigger the swarm passing the configuration file to the permutation runner in NuPIC.
     Also trigger the writing of the resultant model params file
@@ -93,12 +103,16 @@ def swarmForBestModelParams(swarmConfig, areaDirPath, maxWorkers=4):
     createDirIfNotExisting(permuWorkDir)
     createDirIfNotExisting(outputDir)
 
+    log.info("Starting permutations_runner for area %s" % areaId)
+
     modelParams = permutations_runner.runWithConfig(
         swarmConfig,
         {"maxWorkers": maxWorkers, "overwrite": True},
         outputLabel=outputLabel,
         outDir=outputDir,
         permWorkDir=permuWorkDir)
+
+    log.info("Writing swarm results to model params file for area %s" % areaId)
 
     modelParamsFilePath = writeModelParamsToFile(modelParams, outputDir)
 
@@ -113,7 +127,7 @@ def createDirIfNotExisting(dir):
 def swarm(areaId, areaDirPath):
     log.info("Running a %s sized swarm for area %s" % (SWARM_DESCRIPTION["swarmSize"], areaId))
 
-    modelParamsFilePath = swarmForBestModelParams(SWARM_DESCRIPTION, areaDirPath)
+    modelParamsFilePath = swarmForBestModelParams(SWARM_DESCRIPTION, areaDirPath, areaId)
     log.info("Wrote the model param file to %s" % modelParamsFilePath)
 
 
