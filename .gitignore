@@ -4,10 +4,20 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+
+
+### CUSTOM
 .idea/
+scripts/logs/*
+view/logs/*
 *nohup.out
 /project_config.ini
 /area_data/*
+view/predictions/node_modules/
+view/restservice/node_modules/
+
+
+
 # C extensions
 *.so
 

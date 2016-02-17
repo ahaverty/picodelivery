@@ -1,0 +1,41 @@
+<html>
+<head>
+<script type="text/javascript"
+  src="dygraph-combined-dev.js"></script>
+<script type="text/javascript" src="jquery-2.1.4.min.js"></script>
+</head>
+<body>
+<div id="graphdiv3"
+  style="width:1200px; height:750px;"><b>Gathering graph data...</br>Please Wait...</b></div>
+<h2>Controls</h2>
+<p>Zoom in: Highlight an area using mouse/cursor</br>Zoom out: Double left click</br>Scroll Horizontally: SHIFT + drag mouse</p>
+<script type="text/javascript">
+	
+	$( document ).ready(function() {
+		
+		$.getJSON('http://picodelivery.westeurope.cloudapp.azure.com:8081/api/actualandpredictions/1/10000', function(data) {
+			//alert(data[2].hour)
+			
+			var predictions = new Array();
+			
+			for (i = 0; i < data.length; i++) {
+				innerArray = new Array();
+				innerArray.push(new Date(data[i].hour * 1000));
+				innerArray.push(data[i].actual)
+				innerArray.push(data[i].value);
+				predictions.push(innerArray);
+			}
+
+			g3 = new Dygraph(
+				document.getElementById("graphdiv3"),
+				predictions,
+				{
+				labels: ['Time', 'Actuals', 'Prediction']
+				}
+			);
+		});
+	});
+	
+</script>
+</body>
+</html>
