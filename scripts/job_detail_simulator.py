@@ -73,16 +73,35 @@ def main():
 
     numberOfRestaurants = len(restaurantIds)
     totalDaysDifference = abs((toDate - fromDate).days)
+
     avgSize = ((minSize + maxSize) / 2)
     avgVariance = ((minVariance + maxVariance) /2)
     avgMultiplier = multiplier * avgSize * avgVariance
 
-    avgDayWeight = (sum(float(x) for x in frequencyDays) / len(frequencyDays))
-    avgHourlyWeight = (sum(float(x) for x in frequencyHours) / len(frequencyHours))
-    #estimateEachHourOfWeek
+    # avgDayWeight = (sum(float(x) for x in frequencyDays) / len(frequencyDays))
+    # avgHourlyWeight = (sum(float(x) for x in frequencyHours) / len(frequencyHours))
 
-    avgJobsPerRestuarant = avgSize * avgVariance * avgDayWeight * avgHourlyWeight
-    estimateTotalRows = avgJobsPerRestuarant * numberOfRestaurants * totalDaysDifference
+    jobsPerDayAverage = []
+    for dayWeight in frequencyDays:
+        dayWeight = float(dayWeight)
+
+        totalPerDay = 0
+        for hourWeight in frequencyHours:
+            totalPerDay += hourWeight
+
+        jobsPerDayAverage.append(dayWeight * totalPerDay * avgMultiplier)
+
+    # Now have a rough estimate of the amount of jobs per day of the week (e.g. Monday, [0] has 80 jobs, Tuesday, [1] has 68 jobs...)
+
+    estimateTotalRowsPerRestaurant = 0
+    iterateDate = fromDate
+    while iterateDate < fromDate:
+        estimateTotalRowsPerRestaurant += jobsPerDayAverage[iterateDate.weekday()]
+        iterateDate = iterateDate + 1
+
+
+    #Then multiply the result by the amount of restaurants
+    estimateTotalRows = estimateTotalRowsPerRestaurant * numberOfRestaurants
 
     log.info("Estimating %s total rows, for %s restaurants over %s days." % (estimateTotalRows, numberOfRestaurants, totalDaysDifference))
 
