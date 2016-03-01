@@ -50,8 +50,8 @@ def main(argv):
     totalDaysDifference = abs((toDate - fromDate).days)
     avgSize = ((minSize + maxSize) / 2)
     avgVariance = ((minVariance + maxVariance) /2)
-    avgDayWeight = (sum(frequencyDays) / len(frequencyDays))
-    avgHourlyWeight = (sum(frequencyHours) / len(frequencyHours))
+    avgDayWeight = (sum(float(x) for x in frequencyDays) / len(frequencyDays))
+    avgHourlyWeight = (sum(float(x) for x in frequencyHours) / len(frequencyHours))
 
     avgJobsPerRestuarant = avgSize * avgVariance * avgDayWeight * avgHourlyWeight
     estimateTotalRows = avgJobsPerRestuarant * numberOfRestaurants * totalDaysDifference
