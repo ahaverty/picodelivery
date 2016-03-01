@@ -19,8 +19,17 @@ from picodelivery import configHelper, databaseHelper
 
 import logging
 
-parse = argparse.ArgumentParser()
-parser = argparse.ArgumentParser()
+parser = argparse.ArgumentParser(description='Create jobs for every restaurant in the database, based on the configuration file and the dates provided.')
+parser.add_argument(
+    '-s', '--start',
+    help="The date to begin creating jobs from, in the form (YYYY-mm-dd)",
+    required=True,
+)
+parser.add_argument(
+    '-e', '--end',
+    help="The date to end creating jobs, in the form (YYYY-mm-dd)",
+    required=True,
+)
 parser.add_argument(
     '-d', '--debug',
     help="Print lots of debugging statements",
@@ -50,17 +59,12 @@ maxWorth = float(config.get('simulator_jobs', 'maxWorth'))
 frequencyDays = config.get('simulator_jobs', 'frequencyDays').split(', ')
 frequencyHours = config.get('simulator_jobs', 'frequencyHours').split(', ')
 
-def main(argv):
-    
-    if len(argv) < 2:
-        usage(2)
+def main():
 
     connection = databaseHelper.getDbConnection(config)
 
-    fromDate = datetime.strptime(argv[0], '%Y-%m-%d')
-    # TODO possibly use the second argument to define how many days to insert from the fromDate..
-    toDate = datetime.strptime(argv[1], '%Y-%m-%d')
-    # TODO maybe limit the max days allowed to avoid any mistakes when passing in dates...
+    fromDate = datetime.strptime(args.start, '%Y-%m-%d')
+    toDate = datetime.strptime(args.end, '%Y-%m-%d')
 
     log.info("Beginning simulator with parameters: %s - %s" % (fromDate, toDate))
 
@@ -214,4 +218,4 @@ def insertManyJobDetailEntriesToDb(connection, instanceValues):
 
 if __name__ == "__main__":
     # log = logger.setupCustomLogger(os.path.basename(__file__))
-    main(sys.argv[1:])
+    main()
