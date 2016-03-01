@@ -7,13 +7,33 @@ Restaurants should probably differ in size, set a restaurant with a size between
 
 import sys
 import os
+import argparse
 from datetime import datetime, timedelta
 from random import uniform, randrange
 
 from dateutil import rrule
 
 from configuration import simulators_sql
-from picodelivery import logger, configHelper, databaseHelper
+from picodelivery import configHelper, databaseHelper
+# from picodelivery import logger
+
+import logging
+
+parse = argparse.ArgumentParser()
+parser = argparse.ArgumentParser()
+parser.add_argument(
+    '-d', '--debug',
+    help="Print lots of debugging statements",
+    action="store_const", dest="loglevel", const=logging.DEBUG,
+    default=logging.WARNING,
+)
+parser.add_argument(
+    '-v', '--verbose',
+    help="Be verbose",
+    action="store_const", dest="loglevel", const=logging.INFO,
+)
+args = parser.parse_args()
+log = logging.basicConfig(level=args.loglevel)
 
 config = configHelper.getConfig("../project_config.ini")
 
@@ -193,5 +213,5 @@ def insertManyJobDetailEntriesToDb(connection, instanceValues):
         sys.exit(10)
 
 if __name__ == "__main__":
-    log = logger.setupCustomLogger(os.path.basename(__file__))
+    # log = logger.setupCustomLogger(os.path.basename(__file__))
     main(sys.argv[1:])
