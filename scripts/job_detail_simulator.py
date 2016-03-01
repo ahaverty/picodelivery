@@ -42,7 +42,8 @@ parser.add_argument(
     action="store_const", dest="loglevel", const=logging.INFO,
 )
 args = parser.parse_args()
-log = logging.basicConfig(level=args.loglevel)
+logging.basicConfig(level=args.loglevel)
+log = logging.getLogger('job_detail_simulator')
 
 config = configHelper.getConfig("../project_config.ini")
 
@@ -63,8 +64,8 @@ def main():
 
     connection = databaseHelper.getDbConnection(config)
 
-    fromDate = datetime.strptime(args.start, '%Y-%m-%d')
-    toDate = datetime.strptime(args.end, '%Y-%m-%d')
+    fromDate = datetime.strptime(str(args.start), '%Y-%m-%d')
+    toDate = datetime.strptime(str(args.end), '%Y-%m-%d')
 
     log.info("Beginning simulator with parameters: %s - %s" % (fromDate, toDate))
 
@@ -74,8 +75,11 @@ def main():
     totalDaysDifference = abs((toDate - fromDate).days)
     avgSize = ((minSize + maxSize) / 2)
     avgVariance = ((minVariance + maxVariance) /2)
+    avgMultiplier = multiplier * avgSize * avgVariance
+
     avgDayWeight = (sum(float(x) for x in frequencyDays) / len(frequencyDays))
     avgHourlyWeight = (sum(float(x) for x in frequencyHours) / len(frequencyHours))
+    #estimateEachHourOfWeek
 
     avgJobsPerRestuarant = avgSize * avgVariance * avgDayWeight * avgHourlyWeight
     estimateTotalRows = avgJobsPerRestuarant * numberOfRestaurants * totalDaysDifference
