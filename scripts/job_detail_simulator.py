@@ -46,6 +46,21 @@ def main(argv):
 
     restaurantIds = getRestaurantIdsFromDb(connection)
 
+    numberOfRestaurants = len(restaurantIds)
+    totalDaysDifference = abs((toDate - fromDate).days)
+    avgSize = ((minSize + maxSize) / 2)
+    avgVariance = ((minVariance + maxVariance) /2)
+    avgDayWeight = (sum(frequencyDays) / len(frequencyDays))
+    avgHourlyWeight = (sum(frequencyHours) / len(frequencyHours))
+
+    avgJobsPerRestuarant = avgSize * avgVariance * avgDayWeight * avgHourlyWeight
+    estimateTotalRows = avgJobsPerRestuarant * numberOfRestaurants * totalDaysDifference
+
+    log.info("Estimating %s total rows, for %s restaurants over %s days." % (estimateTotalRows, numberOfRestaurants, totalDaysDifference))
+
+    if queryYesNo("Do you wish to continue?") == False:
+        exit(25)    # Document exit codes
+
     for restaurantId in restaurantIds:
         createJobDetailEntriesForRestaurant(connection, restaurantId, fromDate, toDate)
 
@@ -61,6 +76,39 @@ def usage(exitCode):
     print "Error, exiting..."
     log.error("Exiting program with exit code %s" % exitCode)
     exit(exitCode)
+
+
+def queryYesNo(question, default="yes"):
+    """Ask a yes/no question via raw_input() and return their answer.
+
+    "question" is a string that is presented to the user.
+    "default" is the presumed answer if the user just hits <Enter>.
+        It must be "yes" (the default), "no" or None (meaning
+        an answer is required of the user).
+
+    The "answer" return value is True for "yes" or False for "no".
+    """
+    valid = {"yes": True, "y": True, "ye": True,
+             "no": False, "n": False}
+    if default is None:
+        prompt = " [y/n] "
+    elif default == "yes":
+        prompt = " [Y/n] "
+    elif default == "no":
+        prompt = " [y/N] "
+    else:
+        raise ValueError("invalid default answer: '%s'" % default)
+
+    while True:
+        sys.stdout.write(question + prompt)
+        choice = raw_input().lower()
+        if default is not None and choice == '':
+            return valid[default]
+        elif choice in valid:
+            return valid[choice]
+        else:
+            sys.stdout.write("Please respond with 'yes' or 'no' "
+                             "(or 'y' or 'n').\n")
 
 
 def createJobDetailEntriesForRestaurant(connection, restaurantId, fromDate, toDate):
@@ -137,12 +185,12 @@ def insertManyJobDetailEntriesToDb(connection, instanceValues):
     cursor = connection.cursor()
     
     try:
-    	cursor.executemany(simulators_sql.insertJobDetailSql, instanceValues)
+        cursor.executemany(simulators_sql.insertJobDetailSql, instanceValues)
     except Exception as e:
-	log.exception("executemany() raised an exeption..")
-	log.error("Rolling back")
-	connection.rollback()
-	sys.exit(10)
+        log.exception("executemany() raised an exeption..")
+        log.error("Rolling back")
+        connection.rollback()
+        sys.exit(10)
 
 if __name__ == "__main__":
     log = logger.setupCustomLogger(os.path.basename(__file__))
