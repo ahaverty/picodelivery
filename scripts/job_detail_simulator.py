@@ -9,6 +9,7 @@ import sys
 import os
 import traceback
 import argparse
+import time
 from datetime import datetime, timedelta
 from random import uniform, randrange
 
@@ -31,6 +32,11 @@ parser.add_argument(
     required=True,
 )
 parser.add_argument(
+    '-y', '--yes',
+    help="Run script, answering yes to all questions as default",
+    action='store_true'
+)
+parser.add_argument(
     '-d', '--debug',
     help="Print lots of debugging statements",
     action="store_const", dest="loglevel", const=logging.DEBUG,
@@ -44,6 +50,9 @@ parser.add_argument(
 args = parser.parse_args()
 logging.basicConfig(level=args.loglevel)
 log = logging.getLogger('job_detail_simulator')
+st = datetime.fromtimestamp(time.time()).strftime('%Y%m%d%H%M%S')
+fh = logging.FileHandler('logs/job_detail_simulator_' + st + '_.log')
+log.addHandler(fh)
 
 config = configHelper.getConfig("../project_config.ini")
 
@@ -80,8 +89,9 @@ def main():
 
     log.info("Estimating {:,} total rows, for {:,} restaurants over {:,} days.".format(int(estimateTotalRows), numberOfRestaurants, totalDaysDifference))
 
-    if queryYesNo("Do you wish to continue?") == False:
-        exit(25)    # Document exit codes
+    if args.yes == False:
+        if queryYesNo("Do you wish to continue?") == False:
+            exit(25)    # Document exit codes
 
     try:
         start = datetime.now()
