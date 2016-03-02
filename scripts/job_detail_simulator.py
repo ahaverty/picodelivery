@@ -192,7 +192,7 @@ def setDatabaseForBulkInserts(cursor, state):
     log.debug("%s autocommit, unique checks, and foreign key checks" % message)
 
     #cursor.execute(simulators_sql.setAutocommit, (value))
-    cursor.execute(simulators_sql.setTableLock, (value))
+    cursor.execute(simulators_sql.setDisableTrigger, (value))
     cursor.execute(simulators_sql.setUniqueChecks, (value))
     cursor.execute(simulators_sql.setForeignKeyChecks, (value))
     
@@ -260,13 +260,13 @@ def createJobDetailEntriesForRestaurant(cursor, restaurantId, startDate, endDate
 
     for dateAndJobAmount in dateAndJobAmounts :
         # Will need to randomly disperse the amount of orders first and create individual instances..
-	dispersedJobsForHour = disperseJobsForHour(dateAndJobAmount[0], dateAndJobAmount[1])
+        dispersedJobsForHour = disperseJobsForHour(dateAndJobAmount[0], dateAndJobAmount[1])
         for jobTimeForHour in dispersedJobsForHour:
             jobTimesAggregated.append(jobTimeForHour)
 
     data = []
     for jobTime in jobTimesAggregated:
-	data.append((restaurantId, jobTime, jobTime))
+        data.append((restaurantId, jobTime, jobTime))
 
     log.debug("Adding {:,} jobs for restaurant with id {:,}".format(len(jobTimesAggregated), restaurantId))
     insertManyJobDetailEntriesToDb(cursor, data)
