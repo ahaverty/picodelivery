@@ -101,10 +101,14 @@ def main():
         for restaurantId in restaurantIds:
             createJobDetailEntriesForRestaurant(cursor, restaurantId, startDate, endDate)
 
-        setDatabaseForBulkInserts(cursor, False)
+        log.debug("Completed creating job detail entries at %s, taking a total time of %s" % (datetime.now(), datetime.now() - start))
 
         #Must manually insert the aggregates since disabling the trigger due to performance issues
         manuallyInsertAggregateHourlyJobs(cursor, startDate, endDate)
+
+        log.debug("Completed manually aggregating job detail entries at %s, taking a total time of %s" % (datetime.now(), datetime.now() - start))
+
+        setDatabaseForBulkInserts(cursor, False)
 
         log.info("Committing and closing connection with database.")
         connection.commit()
@@ -208,16 +212,14 @@ def setDatabaseForBulkInserts(cursor, state):
         message = "ENABLING"
         keys = simulators_sql.setEnableKeys
 
-    log.debug("%s autocommit, unique checks, and foreign key checks" % message)
+    log.debug("%s keys, aggregate trigger, unique checks, and foreign key checks" % message)
 
     cursor.execute(keys)
     cursor.execute(simulators_sql.setDisableTrigger, (value))
     cursor.execute(simulators_sql.setUniqueChecks, (value))
     cursor.execute(simulators_sql.setForeignKeyChecks, (value))
 
-    log.debug("Finished %s autocommit, unique checks, and foreign key checks" % message)
-
-
+    log.debug("Finished %s keys, aggregate trigger, unique checks, and foreign key checks" % message)
 
 
 def randomDate(start, end):
@@ -314,10 +316,17 @@ def manuallyInsertAggregateHourlyJobs(cursor, startDate, endDate):
 
     log.debug("Found %s areas" % (len(areaIds)))
 
-    # Iterate through each hour between the dates, generating job counts
-    for dt in rrule.rrule(rrule.HOURLY, dtstart=startDate, until=endDate):
-        for areaId in areaIds:
-            cursor.execute(simulators_sql.insertIntoAggregateHourlyJobs, (areaId, dt, areaId, dt, dt))
+    data = []
+
+    for areaId in areaIds:
+        # Iterate through each hour between the dates, generating job counts
+        for dt in rrule.rrule(rrule.HOURLY, dtstart=startDate, until=endDate):
+            data.append((areaId, dt, areaId, dt, dt))
+
+        # Make sure only n (1000?) rows go into the executeMany at a time.
+        cursor.executeMany(simulators_sql.insertIntoAggregateHourlyJobs, data)
+        # Reusing the data array so clearing here
+        data = []
 
 
 if __name__ == "__main__":
