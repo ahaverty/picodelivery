@@ -78,16 +78,13 @@ def main():
     avgVariance = ((minVariance + maxVariance) /2)
     avgMultiplier = multiplier * avgSize * avgVariance
 
-    # avgDayWeight = (sum(float(x) for x in frequencyDays) / len(frequencyDays))
-    # avgHourlyWeight = (sum(float(x) for x in frequencyHours) / len(frequencyHours))
-
     jobsPerDayAverage = []
     for dayWeight in frequencyDays:
         dayWeight = float(dayWeight)
 
         totalPerDay = 0
         for hourWeight in frequencyHours:
-            totalPerDay += hourWeight
+            totalPerDay += float(hourWeight)
 
         jobsPerDayAverage.append(dayWeight * totalPerDay * avgMultiplier)
 
@@ -95,15 +92,15 @@ def main():
 
     estimateTotalRowsPerRestaurant = 0
     iterateDate = fromDate
-    while iterateDate < fromDate:
+    while iterateDate < toDate:
         estimateTotalRowsPerRestaurant += jobsPerDayAverage[iterateDate.weekday()]
-        iterateDate = iterateDate + 1
+        iterateDate += timedelta(days=1)
 
 
     #Then multiply the result by the amount of restaurants
     estimateTotalRows = estimateTotalRowsPerRestaurant * numberOfRestaurants
 
-    log.info("Estimating %s total rows, for %s restaurants over %s days." % (estimateTotalRows, numberOfRestaurants, totalDaysDifference))
+    log.info("Estimating {:,} total rows, for {:,} restaurants over {:,} days.".format(int(estimateTotalRows), numberOfRestaurants, totalDaysDifference))
 
     if queryYesNo("Do you wish to continue?") == False:
         exit(25)    # Document exit codes
