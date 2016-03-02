@@ -192,15 +192,15 @@ def setDatabaseForBulkInserts(cursor, state):
     if state:
         value = 0
         message = "DISABLING"
-        able = "DISABLE"
+        keys = simulators_sql.setDisableKeys
     else:
         value = 1
         message = "ENABLING"
-        able = "ENABLE"
+        keys = simulators_sql.setEnableKeys
 
     log.debug("%s autocommit, unique checks, and foreign key checks" % message)
 
-    cursor.execute(simulators_sql.setDisableKeys, (able))
+    cursor.execute(keys)
     cursor.execute(simulators_sql.setDisableTrigger, (value))
     cursor.execute(simulators_sql.setUniqueChecks, (value))
     cursor.execute(simulators_sql.setForeignKeyChecks, (value))
