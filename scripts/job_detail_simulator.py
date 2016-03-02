@@ -69,13 +69,13 @@ def main():
 
     connection = databaseHelper.getDbConnection(config)
     cursor = connection.cursor()
-    
+
     restaurantIds = getRestaurantIdsFromDb(cursor)
 
     numberOfRestaurants = len(restaurantIds)
     totalDaysDifference = abs((endDate - startDate).days)
 
-    
+
     estimateTotalRows = estimateTotalInsertRows(numberOfRestaurants, startDate, endDate)
 
     log.info("Estimating {:,} total rows, for {:,} restaurants over {:,} days.".format(int(estimateTotalRows), numberOfRestaurants, totalDaysDifference))
@@ -84,12 +84,17 @@ def main():
         exit(25)    # Document exit codes
 
     try:
+        start = datetime.now()
+        log.debug("Starting at %s" % start)
         setDatabaseForBulkInserts(cursor, True)
 
         for restaurantId in restaurantIds:
             createJobDetailEntriesForRestaurant(cursor, restaurantId, startDate, endDate)
 
         setDatabaseForBulkInserts(cursor, False)
+
+        #Must manually insert the aggregates since disabling the trigger due to performance issues
+        manuallyInsertAggregateHourlyJobs(cursor, startDate, endDate)
 
         log.info("Committing and closing connection with database.")
         connection.commit()
@@ -98,19 +103,21 @@ def main():
         log.error("Exception occurred while creating job_details, rolling back and closing connection.")
         connection.rollback()
         connection.close()
-	log.error(traceback.format_exc())
+        log.error(traceback.format_exc())
+
+    stop = datetime.now()
+    log.debug("Started simulator at %s, completed at %s, total time taken: %s" % (start, stop, stop-start))
 
 
 def queryYesNo(question, default="yes"):
     """Ask a yes/no question via raw_input() and return their answer.
-
-    "question" is a string that is presented to the user.
-    "default" is the presumed answer if the user just hits <Enter>.
+    question" is a string that is presented to the user.
+    default" is the presumed answer if the user just hits <Enter>.
         It must be "yes" (the default), "no" or None (meaning
         an answer is required of the user).
 
-    The "answer" return value is True for "yes" or False for "no".
-    """
+    The "answer" return value is True for "yes" or False for "no"."""
+
     valid = {"yes": True, "y": True, "ye": True,
              "no": False, "n": False}
     if default is None:
@@ -185,17 +192,19 @@ def setDatabaseForBulkInserts(cursor, state):
     if state:
         value = 0
         message = "DISABLING"
+        able = "DISABLE"
     else:
         value = 1
         message = "ENABLING"
+        able = "ENABLE"
 
     log.debug("%s autocommit, unique checks, and foreign key checks" % message)
 
-    #cursor.execute(simulators_sql.setAutocommit, (value))
+    cursor.execute(simulators_sql.setDisableKeys, (able))
     cursor.execute(simulators_sql.setDisableTrigger, (value))
     cursor.execute(simulators_sql.setUniqueChecks, (value))
     cursor.execute(simulators_sql.setForeignKeyChecks, (value))
-    
+
     log.debug("Finished %s autocommit, unique checks, and foreign key checks" % message)
 
 
@@ -274,6 +283,31 @@ def createJobDetailEntriesForRestaurant(cursor, restaurantId, startDate, endDate
 
 def insertManyJobDetailEntriesToDb(cursor, data):
     cursor.executemany(simulators_sql.insertJobDetailSql, data)
+
+
+def getAreaIdsFromDatabase(cursor):
+    areaIds = []
+
+    cursor.execute(simulators_sql.allAreaIds)
+
+    row = cursor.fetchone()
+    while row:
+        areaIds.append(row['id'])
+        row = cursor.fetchone()
+
+    return areaIds
+
+
+def manuallyInsertAggregateHourlyJobs(cursor, startDate, endDate):
+    log.info("Beginning manual inserts for aggregate hourly jobs")
+    areaIds = getAreaIdsFromDatabase(cursor)
+
+    log.debug("Found %s areas" % (len(areaIds)))
+
+    # Iterate through each hour between the dates, generating job counts
+    for dt in rrule.rrule(rrule.HOURLY, dtstart=startDate, until=endDate):
+        for areaId in areaIds:
+            cursor.execute(simulators_sql.insertIntoAggregateHourlyJobs, (areaId, dt, areaId, dt, dt))
 
 
 if __name__ == "__main__":
