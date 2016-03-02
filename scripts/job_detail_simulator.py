@@ -67,7 +67,7 @@ def main():
     log.info("Beginning simulator with parameters: %s - %s" % (startDate, endDate))
 
     connection = databaseHelper.getDbConnection(config)
-    return connection.cursor()
+    cursor = connection.cursor()
     
     restaurantIds = getRestaurantIdsFromDb(cursor)
 
@@ -93,10 +93,11 @@ def main():
         log.info("Committing and closing connection with database.")
         connection.commit()
         connection.close()
-    except Exception:
+    except Exception, e:
         log.error("Exception occurred while creating job_details, rolling back and closing connection.")
         connection.rollback()
         connection.close()
+	log.error(e)
 
 
 def queryYesNo(question, default="yes"):
@@ -182,16 +183,18 @@ def setDatabaseForBulkInserts(cursor, state):
 
     if state:
         value = 0
-        message = "OFF"
+        message = "DISABLING"
     else:
         value = 1
-        message = "ON"
+        message = "ENABLING"
 
-    log.debug("Setting autocommit, unique checks, and foreign key checks to %s" % message)
+    log.debug("%s autocommit, unique checks, and foreign key checks" % message)
 
-    cursor.execute(simulators_sql.setAutocommit, value)
-    cursor.execute(simulators_sql.setUniqueChecks, value)
-    cursor.execute(simulators_sql.setForeignKeyChecks, value)
+    #cursor.execute(simulators_sql.setAutocommit, (value))
+    cursor.execute(simulators_sql.setUniqueChecks, (value))
+    cursor.execute(simulators_sql.setForeignKeyChecks, (value))
+    
+    log.debug("Finished %s autocommit, unique checks, and foreign key checks" % message)
 
 
 
