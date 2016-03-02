@@ -15,7 +15,6 @@ from dateutil import rrule
 
 from configuration import simulators_sql
 from picodelivery import configHelper, databaseHelper
-# from picodelivery import logger
 
 import logging
 
@@ -60,66 +59,44 @@ maxWorth = float(config.get('simulator_jobs', 'maxWorth'))
 frequencyDays = config.get('simulator_jobs', 'frequencyDays').split(', ')
 frequencyHours = config.get('simulator_jobs', 'frequencyHours').split(', ')
 
+
 def main():
+    startDate = datetime.strptime(str(args.start), '%Y-%m-%d')
+    endDate = datetime.strptime(str(args.end), '%Y-%m-%d')
+
+    log.info("Beginning simulator with parameters: %s - %s" % (startDate, endDate))
 
     connection = databaseHelper.getDbConnection(config)
-
-    fromDate = datetime.strptime(str(args.start), '%Y-%m-%d')
-    toDate = datetime.strptime(str(args.end), '%Y-%m-%d')
-
-    log.info("Beginning simulator with parameters: %s - %s" % (fromDate, toDate))
-
-    restaurantIds = getRestaurantIdsFromDb(connection)
+    return connection.cursor()
+    
+    restaurantIds = getRestaurantIdsFromDb(cursor)
 
     numberOfRestaurants = len(restaurantIds)
-    totalDaysDifference = abs((toDate - fromDate).days)
+    totalDaysDifference = abs((endDate - startDate).days)
 
-    avgSize = ((minSize + maxSize) / 2)
-    avgVariance = ((minVariance + maxVariance) /2)
-    avgMultiplier = multiplier * avgSize * avgVariance
-
-    jobsPerDayAverage = []
-    for dayWeight in frequencyDays:
-        dayWeight = float(dayWeight)
-
-        totalPerDay = 0
-        for hourWeight in frequencyHours:
-            totalPerDay += float(hourWeight)
-
-        jobsPerDayAverage.append(dayWeight * totalPerDay * avgMultiplier)
-
-    # Now have a rough estimate of the amount of jobs per day of the week (e.g. Monday, [0] has 80 jobs, Tuesday, [1] has 68 jobs...)
-
-    estimateTotalRowsPerRestaurant = 0
-    iterateDate = fromDate
-    while iterateDate < toDate:
-        estimateTotalRowsPerRestaurant += jobsPerDayAverage[iterateDate.weekday()]
-        iterateDate += timedelta(days=1)
-
-
-    #Then multiply the result by the amount of restaurants
-    estimateTotalRows = estimateTotalRowsPerRestaurant * numberOfRestaurants
+    
+    estimateTotalRows = estimateTotalInsertRows(numberOfRestaurants, startDate, endDate)
 
     log.info("Estimating {:,} total rows, for {:,} restaurants over {:,} days.".format(int(estimateTotalRows), numberOfRestaurants, totalDaysDifference))
 
     if queryYesNo("Do you wish to continue?") == False:
         exit(25)    # Document exit codes
 
-    for restaurantId in restaurantIds:
-        createJobDetailEntriesForRestaurant(connection, restaurantId, fromDate, toDate)
+    try:
+        setDatabaseForBulkInserts(cursor, True)
 
-    log.info("Committing and closing connection with database.")
-    connection.commit()
-    connection.close()
+        for restaurantId in restaurantIds:
+            createJobDetailEntriesForRestaurant(cursor, restaurantId, startDate, endDate)
 
+        setDatabaseForBulkInserts(cursor, False)
 
-
-
-def usage(exitCode):
-    print "Usage: job_detail_simulator.py fromdate(YYYY-mm-dd) todate(YYYY-mm-dd)"
-    print "Error, exiting..."
-    log.error("Exiting program with exit code %s" % exitCode)
-    exit(exitCode)
+        log.info("Committing and closing connection with database.")
+        connection.commit()
+        connection.close()
+    except Exception:
+        log.error("Exception occurred while creating job_details, rolling back and closing connection.")
+        connection.rollback()
+        connection.close()
 
 
 def queryYesNo(question, default="yes"):
@@ -155,23 +132,37 @@ def queryYesNo(question, default="yes"):
                              "(or 'y' or 'n').\n")
 
 
-def createJobDetailEntriesForRestaurant(connection, restaurantId, fromDate, toDate):
-    # Randomly choose the size of the restaurant
-    size = uniform(minSize, maxSize)
+def estimateTotalInsertRows(numberOfRestaurants, startDate, endDate) :
+    avgSize = ((minSize + maxSize) / 2)
+    avgVariance = ((minVariance + maxVariance) /2)
+    avgMultiplier = multiplier * avgSize * avgVariance
 
-    # Iterate through each hour between the dates, generating a job count and inserting
-    for dt in rrule.rrule(rrule.HOURLY, dtstart=fromDate, until=toDate):
-        jobCountForHour = generateJobCount(size, dt.weekday(), dt.hour)
-        log.debug("#" + str(restaurantId) + " - " + str(dt) + " job count: " + str(jobCountForHour))
+    jobsPerDayAverage = []
+    for dayWeight in frequencyDays:
+        dayWeight = float(dayWeight)
 
-        # Will need to randomly disperse the amount of orders first and create individual instances..
-        disperseAndInsertIndividualJobs(connection, restaurantId, dt, jobCountForHour)
+        totalPerDay = 0
+        for hourWeight in frequencyHours:
+            totalPerDay += float(hourWeight)
+
+        jobsPerDayAverage.append(dayWeight * totalPerDay * avgMultiplier)
+
+    # Now have a rough estimate of the amount of jobs per day of the week (e.g. Monday, [0] has 80 jobs, Tuesday, [1] has 68 jobs...)
+
+    estimateTotalRowsPerRestaurant = 0
+    iterateDate = startDate
+    while iterateDate < endDate:
+        estimateTotalRowsPerRestaurant += jobsPerDayAverage[iterateDate.weekday()]
+        iterateDate += timedelta(days=1)
 
 
-def getRestaurantIdsFromDb(connection):
+    #Then multiply the result by the amount of restaurants
+    return estimateTotalRowsPerRestaurant * numberOfRestaurants
+
+
+def getRestaurantIdsFromDb(cursor):
     restaurantIds = []
 
-    cursor = connection.cursor()
     cursor.execute(simulators_sql.allRestaurantIds)
 
     row = cursor.fetchone()
@@ -182,9 +173,27 @@ def getRestaurantIdsFromDb(connection):
     return restaurantIds
 
 
-def generateJobCount(size, day, hour):
-    # Get a count of jobs using the hour/week graph values and a random multiplier between the min and max ranges
-    return int(round(size * float(frequencyDays[day]) * uniform(minVariance, maxVariance) * float(frequencyHours[hour]) * multiplier))
+def setDatabaseForBulkInserts(cursor, state):
+    '''
+    Setup the database for bulk inserting/efficiency
+    True to turn setup for bulk inserts, false to undo
+    :return:
+    '''
+
+    if state:
+        value = 0
+        message = "OFF"
+    else:
+        value = 1
+        message = "ON"
+
+    log.debug("Setting autocommit, unique checks, and foreign key checks to %s" % message)
+
+    cursor.execute(simulators_sql.setAutocommit, value)
+    cursor.execute(simulators_sql.setUniqueChecks, value)
+    cursor.execute(simulators_sql.setForeignKeyChecks, value)
+
+
 
 
 def randomDate(start, end):
@@ -197,45 +206,66 @@ def randomDate(start, end):
     return start + timedelta(seconds=random_second)
 
 
-def disperseAndInsertIndividualJobs(connection, restaurantId, startingHour, jobCountForHour):
+def disperseJobsForHour(startingHour, jobCountForHour):
     '''
-    Given an overall amount of orders for a restaurant in an hour,
-    create randomly dispersed order instances
-    and insert into the job detail table
+    Given an overall amount of orders for a restaurant,
+    create randomly dispersed job times over the hour
     '''
 
-    jobInstanceValues = []
+    jobTimesInHour = []
 
     for i in range(jobCountForHour):
         # Get a random time for each job instance
-        time = randomDate(startingHour, startingHour + timedelta(hours=1))
+        jobTimesInHour.append(randomDate(startingHour, startingHour + timedelta(hours=1)))
 
-        # Get a random worth for the job within a range
-        worth = round(uniform(minWorth, maxWorth),2)
-
-        # List using restaurantId and two times to conform
-        # to executemany() in pymsql to make transactions faster.
-        jobInstanceValues.append([restaurantId, time, time, worth])
-
-    # Sort the list by datetime
-    sortedJobInstanceValues = sorted(jobInstanceValues, key=lambda jobInstanceValues: jobInstanceValues[1])
-
-    # for jobInstance in sortedJobInstanceValues:
-    #     # Insert the job instance to the DB
-    insertManyJobDetailEntriesToDb(connection, sortedJobInstanceValues)
+    # Sort the list by datetime and return it
+    return jobTimesInHour.sort()
 
 
-def insertManyJobDetailEntriesToDb(connection, instanceValues):
-    cursor = connection.cursor()
-    
-    try:
-        cursor.executemany(simulators_sql.insertJobDetailSql, instanceValues)
-    except Exception as e:
-        log.exception("executemany() raised an exeption..")
-        log.error("Rolling back")
-        connection.rollback()
-        sys.exit(10)
+def generateJobCountForHour(size, day, hour):
+    # Get a count of jobs using the hour/week graph values and a random multiplier between the min and max ranges
+    return int(round(size * float(frequencyDays[day]) * uniform(minVariance, maxVariance) * float(frequencyHours[hour]) * multiplier))
+
+
+def createJobDetailEntriesForRestaurant(cursor, restaurantId, startDate, endDate):
+    '''
+    Define the size of the restaurant (e.g. Dominos sized or small chipper sized)
+    Define an array for each hour (startDate -> endDate), with a value
+        Each value is the total amount of deliveries the restaurant made that hour
+    Using that array, randomly disperse the jobs across the hour
+
+    :param cursor:
+    :param restaurantId:
+    :param startDate:
+    :param endDate:
+    :return:
+    '''
+    # Randomly choose the size of the restaurant
+
+    size = uniform(minSize, maxSize)
+
+    log.debug("Creating jobs for restaurant with id %s at a size of %s" % (restaurantId, size))
+
+    dateAndJobCounts = [[]]
+
+    # Iterate through each hour between the dates, generating job counts
+    for dt in rrule.rrule(rrule.HOURLY, dtstart=startDate, until=endDate):
+        dateAndJobCounts.append([dt, generateJobCountForHour(size, dt.weekday(), dt.hour)])
+
+    jobTimesAggregated = []
+
+    for dateAndJobAmount in dateAndJobCounts :
+        # Will need to randomly disperse the amount of orders first and create individual instances..
+        for jobTimeForHour in disperseJobsForHour(dateAndJobAmount[0], dateAndJobAmount[1]):
+            jobTimesAggregated.append(jobTimeForHour)
+
+    log.debug("Adding {:,} jobs for restaurant with id {:,}".format(len(jobTimesAggregated), restaurantId))
+    insertManyJobDetailEntriesToDb(cursor, restaurantId, jobTimesAggregated)
+
+
+def insertManyJobDetailEntriesToDb(cursor, instanceValues):
+    cursor.executemany(simulators_sql.insertJobDetailSql, instanceValues)
+
 
 if __name__ == "__main__":
-    # log = logger.setupCustomLogger(os.path.basename(__file__))
     main()
