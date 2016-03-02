@@ -7,6 +7,7 @@ Restaurants should probably differ in size, set a restaurant with a size between
 
 import sys
 import os
+import traceback
 import argparse
 from datetime import datetime, timedelta
 from random import uniform, randrange
@@ -97,7 +98,7 @@ def main():
         log.error("Exception occurred while creating job_details, rolling back and closing connection.")
         connection.rollback()
         connection.close()
-	log.error(e)
+	log.error(traceback.format_exc())
 
 
 def queryYesNo(question, default="yes"):
@@ -191,6 +192,7 @@ def setDatabaseForBulkInserts(cursor, state):
     log.debug("%s autocommit, unique checks, and foreign key checks" % message)
 
     #cursor.execute(simulators_sql.setAutocommit, (value))
+    cursor.execute(simulators_sql.setTableLock, (value))
     cursor.execute(simulators_sql.setUniqueChecks, (value))
     cursor.execute(simulators_sql.setForeignKeyChecks, (value))
     
@@ -222,7 +224,7 @@ def disperseJobsForHour(startingHour, jobCountForHour):
         jobTimesInHour.append(randomDate(startingHour, startingHour + timedelta(hours=1)))
 
     # Sort the list by datetime and return it
-    return jobTimesInHour.sort()
+    return sorted(jobTimesInHour)
 
 
 def generateJobCountForHour(size, day, hour):
@@ -244,30 +246,34 @@ def createJobDetailEntriesForRestaurant(cursor, restaurantId, startDate, endDate
     :return:
     '''
     # Randomly choose the size of the restaurant
-
     size = uniform(minSize, maxSize)
 
-    log.debug("Creating jobs for restaurant with id %s at a size of %s" % (restaurantId, size))
+    log.debug("Creating jobs for restaurant with id %s at a size of %s%%" % (restaurantId, ((size/maxSize)*100)))
 
-    dateAndJobCounts = [[]]
+    dateAndJobAmounts = []
 
     # Iterate through each hour between the dates, generating job counts
     for dt in rrule.rrule(rrule.HOURLY, dtstart=startDate, until=endDate):
-        dateAndJobCounts.append([dt, generateJobCountForHour(size, dt.weekday(), dt.hour)])
+        dateAndJobAmounts.append([dt, generateJobCountForHour(size, dt.weekday(), dt.hour)])
 
     jobTimesAggregated = []
 
-    for dateAndJobAmount in dateAndJobCounts :
+    for dateAndJobAmount in dateAndJobAmounts :
         # Will need to randomly disperse the amount of orders first and create individual instances..
-        for jobTimeForHour in disperseJobsForHour(dateAndJobAmount[0], dateAndJobAmount[1]):
+	dispersedJobsForHour = disperseJobsForHour(dateAndJobAmount[0], dateAndJobAmount[1])
+        for jobTimeForHour in dispersedJobsForHour:
             jobTimesAggregated.append(jobTimeForHour)
 
+    data = []
+    for jobTime in jobTimesAggregated:
+	data.append((restaurantId, jobTime, jobTime))
+
     log.debug("Adding {:,} jobs for restaurant with id {:,}".format(len(jobTimesAggregated), restaurantId))
-    insertManyJobDetailEntriesToDb(cursor, restaurantId, jobTimesAggregated)
+    insertManyJobDetailEntriesToDb(cursor, data)
 
 
-def insertManyJobDetailEntriesToDb(cursor, instanceValues):
-    cursor.executemany(simulators_sql.insertJobDetailSql, instanceValues)
+def insertManyJobDetailEntriesToDb(cursor, data):
+    cursor.executemany(simulators_sql.insertJobDetailSql, data)
 
 
 if __name__ == "__main__":
