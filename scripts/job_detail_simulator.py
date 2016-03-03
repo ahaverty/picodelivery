@@ -323,8 +323,9 @@ def manuallyInsertAggregateHourlyJobs(cursor, startDate, endDate):
         for dt in rrule.rrule(rrule.HOURLY, dtstart=startDate, until=endDate):
             data.append((areaId, dt, areaId, dt, dt))
 
-        # Make sure only n (1000?) rows go into the executeMany at a time.
-        cursor.executeMany(simulators_sql.insertIntoAggregateHourlyJobs, data)
+	log.debug("Adding %s aggregated rows for area %s" % (len(data), areaId))
+        # Executing aggregation in batches of areas.
+        cursor.executemany(simulators_sql.insertIntoAggregateHourlyJobs, data)
         # Reusing the data array so clearing here
         data = []
 
