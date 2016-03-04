@@ -8,11 +8,5 @@ setEnableKeys = "ALTER TABLE job_detail ENABLE KEYS;"
 setAutocommit = "SET autocommit=%s"
 setUniqueChecks = "SET unique_checks=%s"
 setForeignKeyChecks = "SET foreign_key_checks=%s"
-insertIntoAggregateHourlyJobs = "INSERT INTO aggregate_hourly_jobs " \
-                                "(area_id, start_hour, count_of_jobs) " \
-                                "VALUES " \
-                                "(%s, %s, (SELECT count(*) FROM job_detail j " \
-                                "JOIN restaurant r ON j.restaurant_id = r.id " \
-                                "JOIN address a ON a.id = r.address_id " \
-                                "WHERE a.area_id = %s " \
-                                "AND j.pickup_time_requested BETWEEN %s AND date_add(%s, INTERVAL 1 HOUR)));"
+getRestaurantsAreaId = "SELECT a.area_id as id FROM restaurant r JOIN address a ON a.id = r.address_id WHERE r.id = %s"
+insertIntoAggregateHourlyJobs = "INSERT INTO aggregate_hourly_jobs (area_id, start_hour, count_of_jobs) VALUES (%s, %s, %s);"
