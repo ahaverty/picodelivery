@@ -276,25 +276,34 @@ def createJobDetailEntriesForRestaurant(cursor, restaurantId, startDate, endDate
 
     log.debug("Creating jobs for restaurant with id %s in area %s at a size of %s%%" % (restaurantId, areaId, ((size/maxSize)*100)))
 
-    dateAndJobAmounts = []
+    restaurantDateAndJobCounts = []
     # Iterate through each hour between the dates, generating job counts
     for dt in rrule.rrule(rrule.HOURLY, dtstart=startDate, until=endDate):
-        dateAndJobAmounts.append([dt, generateJobCountForHour(size, dt.weekday(), dt.hour)])
+        restaurantDateAndJobCounts.append([dt, generateJobCountForHour(size, dt.weekday(), dt.hour)])
 
-    data = []
-    for dateAndJobAmount in dateAndJobAmounts:
+    insertData = []
+    for restaurantDateAndJobCount in restaurantDateAndJobCounts:
         # Add the total jobs per hour to the area counter array
-        areaHourlyJobCount[areaId].append(dateAndJobAmount)
+        existed = False
+        for areaDateAndJobCount in areaHourlyJobCount[areaId].values():
+            # Check if the hour already exists for the area
+            if restaurantDateAndJobCount[0] == areaDateAndJobCount[0]:
+                existed = True
+                # Add to the existing total
+                areaDateAndJobCount[1] += restaurantDateAndJobCount[1]
+        # If the area didn't have the hour already, add it now
+        if not existed:
+            areaHourlyJobCount[areaId].append(restaurantDateAndJobCount)
 
         # Randomly disperse the amount of orders, then sort by date
-        dispersedJobsForHour = disperseJobsForHour(dateAndJobAmount[0], dateAndJobAmount[1])
+        dispersedJobsForHour = disperseJobsForHour(restaurantDateAndJobCount[0], restaurantDateAndJobCount[1])
         for jobTime in dispersedJobsForHour:
             # Add the job times and the restaurant into an array as per the executemany()
-            data.append((restaurantId, jobTime, jobTime))
+            insertData.append((restaurantId, jobTime, jobTime))
 
 
-    log.debug("Adding {:,} jobs for restaurant with id {:,}".format(len(data), restaurantId))
-    insertManyJobDetailEntriesToDb(cursor, data)
+    log.debug("Adding {:,} jobs for restaurant with id {:,}".format(len(insertData), restaurantId))
+    insertManyJobDetailEntriesToDb(cursor, insertData)
 
 
 def insertManyJobDetailEntriesToDb(cursor, data):
@@ -328,13 +337,15 @@ def manuallyInsertAggregateHourlyJobs(cursor, areaHourlyJobCount):
 
     data = []
     for key in areaHourlyJobCount:
-        # TODO!!
         for hour in areaHourlyJobCount[key]:
-            data = [(int(key), hour[0], hour[1])]
+            data.append((int(key), hour[0], hour[1]))
 
         log.debug("Adding %s aggregated rows for area %s" % (len(data), key))
         # Executing aggregation in batches of areas.
         cursor.executemany(simulators_sql.insertIntoAggregateHourlyJobs, data)
+
+        # Empty the array for reuse with next area
+        del data[:]
 
 
 if __name__ == "__main__":
