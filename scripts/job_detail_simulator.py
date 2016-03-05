@@ -96,20 +96,30 @@ def main():
 
     start = datetime.now()
     try:
+        # TODO Add a check if rows exist in either table before beginning.
         log.debug("Starting at %s" % start)
         setDatabaseForBulkInserts(cursor, True)
 
         areaHourlyJobCount = defaultdict(list)
 
+        count = 0
         for restaurantId in restaurantIds:
+            restaurantStartTime = datetime.now()
             createJobDetailEntriesForRestaurant(cursor, restaurantId, startDate, endDate, areaHourlyJobCount)
+            restaurantEndTime = restaurantStartTime - datetime.now()
+            averageTimePerRestaurant = (timedelta(seconds =(averageTimePerRestaurant + restaurantEndTime).total_seconds() / 2))
+            log.debug("Estimating %s until finished creating jobdetails for the remaining %s restaurants" % (timedelta(seconds = (len(restaurantIds) - count) * averageTimePerRestaurant.total_seconds())))
+            count += 1
 
-        log.debug("Completed creating job detail entries at %s, taking a total time of %s" % (datetime.now(), datetime.now() - start))
+
+        createJobsCompleteTime = datetime.now()
+        log.debug("Completed creating job detail entries at %s, taking a total time of %s" % (createJobsCompleteTime, createJobsCompleteTime - start))
 
         #Must manually insert the aggregates since disabling the trigger due to performance issues
         manuallyInsertAggregateHourlyJobs(cursor, areaHourlyJobCount)
 
-        log.debug("Completed manually aggregating job detail entries at %s, taking a total time of %s" % (datetime.now(), datetime.now() - start))
+        aggregationCompleteTime = datetime.now()
+        log.debug("Completed manually aggregating job detail entries at %s, taking a total time of %s" % (aggregationCompleteTime, aggregationCompleteTime - createJobsCompleteTime))
 
         setDatabaseForBulkInserts(cursor, False)
 
@@ -285,7 +295,7 @@ def createJobDetailEntriesForRestaurant(cursor, restaurantId, startDate, endDate
     for restaurantDateAndJobCount in restaurantDateAndJobCounts:
         # Add the total jobs per hour to the area counter array
         existed = False
-        for areaDateAndJobCount in areaHourlyJobCount[areaId].values():
+        for areaDateAndJobCount in areaHourlyJobCount[areaId]:
             # Check if the hour already exists for the area
             if restaurantDateAndJobCount[0] == areaDateAndJobCount[0]:
                 existed = True
