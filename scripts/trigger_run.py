@@ -23,7 +23,7 @@ def main(argv):
         log.info("Running controller.py for area id #%s" % area)
         # run each controller in the background/carry on once called
         subprocess.Popen('python controller.py ' + str(area), shell=True)
-        time.sleep(2)  # Sleeping between each area to avoid database collisions when checking if swarming
+        time.sleep(4)  # Sleeping between each area to avoid database collisions when checking if swarming
 
     log.info("Exiting trigger_run.py, subprocesses may still be running in the background...")
     exit()

@@ -108,14 +108,14 @@ def swarmInProgress(connection, hoursBeforeIgnoring=4):
     '''
     currentlySwarming = False
     cursor = connection.cursor()
-    cursor.execute(predictions_run_sql.swarmingForAreaCheck, (hoursBeforeIgnoring))
+    cursor.execute(predictions_run_sql.swarmingCheck, hoursBeforeIgnoring)
 
     row = cursor.fetchone()
     if row is not None:
         if row['in_progress'] > 0:
             currentlySwarming = True
     else:
-        log.warning("Returned None row from swarm table, this should only occur when the swarm table"
+        log.warning("Returned None row from swarm table, this should only occur when the swarm table "
                     "is empty on the very first swarm run.")
 
     # Return False unless a row was returned
@@ -167,7 +167,7 @@ def triggerSwarmAndWait(areaId):
     log.info("Adding details of the instantiated swarm process to the database "
              "to ensure no overlapping processes start.")
 
-    cmd = ["python swarm.py " + str(areaId)]
+    cmd = ["sudo python swarm.py " + str(areaId)]
     swarmProcess = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
 
     log.info("Swarm process successfully started, currently waiting on swarm to complete (May take awhile)...")
