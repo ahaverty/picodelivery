@@ -7,7 +7,7 @@ insertPredictionResult = "INSERT INTO hourly_prediction " \
 areaIds = "SELECT id FROM area"
 
 swarmingCheck = "SELECT IF((row_created > date_sub(now(), interval %s hour) " \
-                "&& (in_progress > 0)), 1, 0) as in_progress" \
+                "&& (in_progress > 0)), 1, 0) as in_progress " \
                 "FROM swarm " \
                 "ORDER BY id DESC " \
                 "LIMIT 1"
