@@ -103,12 +103,16 @@ def main():
         areaHourlyJobCount = defaultdict(list)
 
         count = 0
+        averageTimePerRestaurant = None
         for restaurantId in restaurantIds:
             restaurantStartTime = datetime.now()
             createJobDetailEntriesForRestaurant(cursor, restaurantId, startDate, endDate, areaHourlyJobCount)
             restaurantEndTime = restaurantStartTime - datetime.now()
+            if averageTimePerRestaurant is None:
+                averageTimePerRestaurant = restaurantEndTime
             averageTimePerRestaurant = (timedelta(seconds =(averageTimePerRestaurant + restaurantEndTime).total_seconds() / 2))
-            log.debug("Estimating %s until finished creating jobdetails for the remaining %s restaurants" % (timedelta(seconds = (len(restaurantIds) - count) * averageTimePerRestaurant.total_seconds())))
+            remainingRestaurants = (len(restaurantIds) - count)
+            log.debug("Estimating %s until finished creating jobdetails for the remaining %s restaurants" % (timedelta(seconds = remainingRestaurants * averageTimePerRestaurant.total_seconds()), remainingRestaurants))
             count += 1
 
 
