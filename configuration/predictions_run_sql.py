@@ -12,6 +12,12 @@ swarmingForAreaCheck = "SELECT in_progress " \
                        "ORDER BY id DESC " \
                        "LIMIT 1"
 
+swarmingCheck = "SELECT IF((row_created > date_sub(now(), interval %s hour) " \
+                "&& (in_progress > 0)), 1, 0) as in_progress" \
+                "FROM swarm " \
+                "ORDER BY id DESC " \
+                "LIMIT 1"
+
 insertSwarmingForAreaRecord = "INSERT INTO swarm " \
                               "(area_id, in_progress) " \
                               "VALUES (%s, %s)"

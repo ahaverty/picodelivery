@@ -8,6 +8,7 @@ for each area and its data (only its past unpredicted data) in the db
 import os
 import subprocess
 import sys
+import time
 from configuration import predictions_run_sql
 from picodelivery import logger, configHelper, databaseHelper
 
@@ -19,11 +20,11 @@ def main(argv):
     areaIds = getAreaIdsFromDatabase(connection)
 
     for area in areaIds:
-        log.info( "running for area id #" + str(area))
-        # argv = [area, steps, modelParamsPath, savedModelsPath]
+        log.info("Running controller.py for area id #%s" % area)
         # run each controller in the background/carry on once called
         subprocess.Popen('python controller.py ' + str(area), shell=True)
-        # controller.main(argv)
+        time.sleep(2)  # Sleeping between each area to avoid database collisions when checking if swarming
+
     log.info("Exiting trigger_run.py, subprocesses may still be running in the background...")
     exit()
 

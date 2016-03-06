@@ -28,19 +28,14 @@ config = configHelper.getConfig("../project_config.ini")
 
 
 def main(argv):
-
-    # TODO Change the parameters to be more defined, similar to how swarm.py is done...
-    # TODO Perhaps just areaId is needed at this stage...
-
-    
+    # TODO use arg parser instead of manually converting arguments..
     if len(argv) < 1:
         printUsageAndExit(2)
     else:
         try:
             areaId = int(argv[0])
-            steps = 1  # TODO Hardcoding steps, need to make a decision later
+            steps = 1
 
-            # TODO Check if this should have the python .py extension or not...
             modelParamsPath = "../area_data/area_" + str(areaId) + "/model_params.py"
             savedModelsPath = "../area_data/area_" + str(areaId) + "/saved_model/"
 
@@ -52,8 +47,9 @@ def main(argv):
     print "Enabling autocommit, to ensure swarming status can be read across instances of controller.py"
     connection.autocommit(True)
 
+    # TODO delay triggering of each area to avoid collisions on this check
     if not modelsParamExists(areaId):
-        if not currentlySwarmingOnArea(connection, areaId):
+        if not swarmInProgress(connection):
             # Publish that the swarm process has begun
             publishSwarmingStatusToDb(connection, areaId, True)
 
@@ -63,7 +59,7 @@ def main(argv):
             # Publish that the swarm process is complete
             publishSwarmingStatusToDb(connection, areaId, False)
         else:
-            log.warning("Another process is currently swarming on area with id: %s" % areaId)
+            log.warning("Another process is currently swarming, only one swarm can run at a time.")
             log.warning("Therefore exiting controller.py")
             sys.exit(10)
 
@@ -96,19 +92,31 @@ def absPathAndVerify(path):
 def modelsParamExists(areaId):
     # TODO define this path better, somewhere more visible...
     modelParamExpectedPath = "../area_data/area_" + str(areaId) + "/model_params.py"
-    # TODO Check that this does not have to be absolute/ is working as expected...
     return os.path.isfile(modelParamExpectedPath)
 
 
-def currentlySwarmingOnArea(connection, areaId):
+def swarmInProgress(connection, hoursBeforeIgnoring=4):
+    '''
+    Check if a swarm is currently marked as 'in progress' in the database.
+    :param connection:
+    :param hoursBeforeIgnoring: The maximum hours before ignoring the
+    'currently running swarm' row. This means that if a swarm seems to be
+    running for x hours, it has probably failed, and never wrote that
+    it was finished, to the database. Therefore, allowing a new swarm to
+    begin, avoiding an endless loop bug.
+    :return:
+    '''
     currentlySwarming = False
     cursor = connection.cursor()
-    cursor.execute(predictions_run_sql.swarmingForAreaCheck, (areaId))
+    cursor.execute(predictions_run_sql.swarmingForAreaCheck, (hoursBeforeIgnoring))
 
     row = cursor.fetchone()
     if row is not None:
         if row['in_progress'] > 0:
             currentlySwarming = True
+    else:
+        log.warning("Returned None row from swarm table, this should only occur when the swarm table"
+                    "is empty on the very first swarm run.")
 
     # Return False unless a row was returned
     # and the value was greater than 0 (i.e 1/True)
@@ -122,8 +130,8 @@ def publishSwarmingStatusToDb(connection, areaId, status):
         inProgress = 0
 
     cursor = connection.cursor()
-    
-    log.info( "Adding swarm record to db for area %s, as %s" % (areaId, status))
+
+    log.info("Adding swarm record to db for area %s, as %s" % (areaId, status))
     cursor.execute(predictions_run_sql.insertSwarmingForAreaRecord, (areaId, inProgress))
 
 
@@ -151,35 +159,35 @@ def generateAggregateDataFileAndStructure(connection, areaId):
             row = cursor.fetchone()
     finally:
         f.close()
-        log.info( "Created aggregate file at %s" % dataFilepath)
+        log.info("Created aggregate file at %s" % dataFilepath)
 
 
 def triggerSwarmAndWait(areaId):
     log.info("Starting swarm process on area with id %s, which may take awhile." % areaId)
-    log.info( "Adding details of the instantiated swarm process to the database" \
-          " to ensure no overlapping processes start.")
+    log.info("Adding details of the instantiated swarm process to the database "
+             "to ensure no overlapping processes start.")
 
     cmd = ["python swarm.py " + str(areaId)]
     swarmProcess = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
 
-    log.info( "Swarm process successfully started, currently waiting on swarm to complete (May take awhile)...")
+    log.info("Swarm process successfully started, currently waiting on swarm to complete (May take awhile)...")
+    log.warning("Note: Only one swarm should run at a time.")
 
     # Grab stdout line by line as it becomes available.  This will loop until
     # swarmProcess terminates.
     while swarmProcess.poll() is None:
         l = swarmProcess.stdout.readline()  # This blocks until it receives a newline.
-        log.info( "[swarm.py]: " + l)
+        log.info("[swarm.py]: %s" % l)
     # When the subprocess terminates there might be unconsumed output
     # that still needs to be processed.
     print swarmProcess.stdout.read()
 
     # TODO implement better error handling and checking exit code..
 
-    log.info( "Swarm on area %s completed." % areaId)
+    log.info("Swarm on area %s completed." % areaId)
 
 
 def runOnLatestData(connection, areaId, steps, modelParamsPath, savedModelsPath):
-
     # Initialise nupic/run.py
     nupic = picodelivery.prediction.run.Run(modelParamsPath, savedModelsPath, steps)
 
@@ -190,7 +198,12 @@ def runOnLatestData(connection, areaId, steps, modelParamsPath, savedModelsPath)
             predictedHour = row[startHour] + timedelta(hours=steps)
             predictedCountOfJobs = nupic.predict(row[startHour], row[countOfJobs])
 
-            log.debug("row@StartHour:{}\tPredictedHour:{}\trow@CountOfJobs:{}\tPredictedCountOfJobs:{}".format(row[startHour], predictedHour, row[countOfJobs], predictedCountOfJobs))
+            log.debug(
+                "row@StartHour:{}\tPredictedHour:{}\trow@CountOfJobs:{}\tPredictedCountOfJobs:{}".format(row[startHour],
+                                                                                                         predictedHour,
+                                                                                                         row[
+                                                                                                             countOfJobs],
+                                                                                                         predictedCountOfJobs))
 
             savePredictionToDatabase(connection, areaId, predictedHour, predictedCountOfJobs)
     finally:

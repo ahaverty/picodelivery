@@ -2,7 +2,7 @@ import logging
 import os
 import time
 import datetime
-st = datetime.datetime.fromtimestamp(time.time()).strftime('%Y%m%d%H%M%S')
+st = datetime.datetime.fromtimestamp(time.time()).strftime('%Y%m%d%H%M')
 
 
 def setupCustomLogger(name):

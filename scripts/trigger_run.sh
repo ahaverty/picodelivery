@@ -6,4 +6,4 @@ crontabLogDir=$logDir"/crontab"
 
 mkdir -p $crontabLogDir
 cd $scriptDir
-python $scriptDir/trigger_run.py >> $crontabLogDir/crontab_trigger_run_$(date +\%Y\%m\%d\%H\%M\%S).txt 2>&1
+python $scriptDir/trigger_run.py >> $crontabLogDir/crontab_trigger_run_$(date +\%Y\%m\%d\%H\%M).txt 2>&1
