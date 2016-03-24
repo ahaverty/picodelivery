@@ -6,7 +6,7 @@ def getDbConnection(config):
                                  user=config.get('database', 'user'),
                                  passwd=config.get('database', 'password'),
                                  db=config.get('database', 'db'),
-                                 charset='utf8mb4',
+                                 charset='utf8',
                                  cursorclass=pymysql.cursors.DictCursor)
 
     return connection
