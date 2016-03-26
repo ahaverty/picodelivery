@@ -26,6 +26,8 @@ startHour = "startHour"
 
 config = configHelper.getConfig("../project_config.ini")
 
+swarmLimit = int(config.get('simulator_jobs', 'swarmLimit'))
+
 
 def main(argv):
     # TODO use arg parser instead of manually converting arguments..
@@ -47,13 +49,13 @@ def main(argv):
     print "Enabling autocommit, to ensure swarming status can be read across instances of controller.py"
     connection.autocommit(True)
 
-    # TODO delay triggering of each area to avoid collisions on this check
     if not modelsParamExists(areaId):
+        # delay triggering of each area to avoid collisions on this check
         if not swarmInProgress(connection):
             # Publish that the swarm process has begun
             publishSwarmingStatusToDb(connection, areaId, True)
 
-            generateAggregateDataFileAndStructure(connection, areaId)
+            generateAggregateDataFileAndStructure(connection, areaId, swarmLimit)
             triggerSwarmAndWait(areaId)
 
             # Publish that the swarm process is complete
@@ -135,14 +137,14 @@ def publishSwarmingStatusToDb(connection, areaId, status):
     cursor.execute(predictions_run_sql.insertSwarmingForAreaRecord, (areaId, inProgress))
 
 
-def generateAggregateDataFileAndStructure(connection, areaId):
+def generateAggregateDataFileAndStructure(connection, areaId, limit):
     """
     Generate the csv file used for swarming, from the mysql db for the specified areaId
     Also setup the folder structure if not already created
     :return:
     """
     cursor = connection.cursor()
-    cursor.execute(predictions_run_sql.areasAggregates, areaId)
+    cursor.execute(predictions_run_sql.areasAggregates, (areaId, limit))
 
     areaDir = "../area_data/area_" + str(areaId) + "/"
     dataFilepath = areaDir + "area_" + str(areaId) + "_aggregates.csv"

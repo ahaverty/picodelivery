@@ -40,3 +40,10 @@ createUser = "INSERT INTO user (email, first_name, last_name) VALUES (%s, %s, %s
 createDriver = "INSERT INTO driver (user_id, first_name, last_name, mobile_number) VALUES (%s, %s, %s, %s)"
 createAddress = "INSERT INTO address (street, map_point) VALUES (%s, GEOMFROMTEXT(%s))"
 createCustomer = "INSERT INTO customer (first_name, last_name, address_id, mobile_number) VALUES (%s, %s, %s, %s)"
+getLastJobDetailTimeSimulated = "SELECT create_time from job_detail WHERE (create_time, restaurant_id) in (select create_time, restaurant_id from simulated_job_detail) ORDER BY create_time desc limit 1;"
+insertFromSimulatorToJobDetail = "INSERT INTO job_detail " \
+                                 "(restaurant_id, status_id, customer_id, create_time, pickup_time_requested, estimated_worth) " \
+                                 "SELECT restaurant_id, status_id, customer_id, create_time, pickup_time_requested, estimated_worth " \
+                                 "FROM simulated_job_detail " \
+                                 "WHERE create_time BETWEEN " \
+                                 "%s AND sysdate()"
