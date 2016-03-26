@@ -69,6 +69,10 @@ maxWorth = float(config.get('simulator_jobs', 'maxWorth'))
 frequencyDays = config.get('simulator_jobs', 'frequencyDays').split(', ')
 frequencyHours = config.get('simulator_jobs', 'frequencyHours').split(', ')
 
+jobDetailTable = config.get('simulator_jobs', 'jobDetailTable')
+aggregateHourlyJobsTable = config.get('simulator_jobs', 'aggregateHourlyJobsTable')
+
+
 
 def main():
     startDate = datetime.strptime(str(args.start), '%Y-%m-%d')
@@ -231,7 +235,7 @@ def setDatabaseForBulkInserts(cursor, state):
 
     log.debug("%s keys, aggregate trigger, unique checks, and foreign key checks" % message)
 
-    cursor.execute(keys)
+    cursor.execute(keys, (jobDetailTable))
     cursor.execute(simulators_sql.setDisableTrigger, (value))
     cursor.execute(simulators_sql.setUniqueChecks, (value))
     cursor.execute(simulators_sql.setForeignKeyChecks, (value))
@@ -285,6 +289,7 @@ def createJobDetailEntriesForRestaurant(cursor, restaurantId, startDate, endDate
     '''
     # Randomly choose the size of the restaurant
     size = uniform(minSize, maxSize)
+    # TODO save size somewhere
 
     areaId = getRestaurantsAreaId(cursor, restaurantId)
 
@@ -313,7 +318,7 @@ def createJobDetailEntriesForRestaurant(cursor, restaurantId, startDate, endDate
         dispersedJobsForHour = disperseJobsForHour(restaurantDateAndJobCount[0], restaurantDateAndJobCount[1])
         for jobTime in dispersedJobsForHour:
             # Add the job times and the restaurant into an array as per the executemany()
-            insertData.append((restaurantId, jobTime, jobTime))
+            insertData.append((jobDetailTable, restaurantId, jobTime, jobTime))
 
 
     log.debug("Adding {:,} jobs for restaurant with id {:,}".format(len(insertData), restaurantId))
@@ -352,7 +357,7 @@ def manuallyInsertAggregateHourlyJobs(cursor, areaHourlyJobCount):
     data = []
     for key in areaHourlyJobCount:
         for hour in areaHourlyJobCount[key]:
-            data.append((int(key), hour[0], hour[1]))
+            data.append((aggregateHourlyJobsTable, int(key), hour[0], hour[1]))
 
         log.debug("Adding %s aggregated rows for area %s" % (len(data), key))
         # Executing aggregation in batches of areas.

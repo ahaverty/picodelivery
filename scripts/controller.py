@@ -59,7 +59,7 @@ def main(argv):
             # Publish that the swarm process is complete
             publishSwarmingStatusToDb(connection, areaId, False)
         else:
-            log.warning("Another process is currently swarming, only one swarm can run at a time.")
+            log.warning("Another process is currently swarming, only one swarm can run at a time. [%s]" % areaId)
             log.warning("Therefore exiting controller.py")
             sys.exit(10)
 

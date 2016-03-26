@@ -1,15 +1,16 @@
-#insertJobDetailSql = "CALL add_job_detail(%s, 1, 6, 1, 0.00, %s, %s, 1, %s)"
-insertJobDetailSql = "INSERT IGNORE INTO job_detail (restaurant_id, create_time, pickup_time_requested) VALUES (%s, %s, %s);"
+insertJobDetailSql = "INSERT IGNORE INTO %s (restaurant_id, create_time, pickup_time_requested) VALUES (%s, %s, %s);"
 allRestaurantIds = "SELECT id FROM restaurant"
 allAreaIds = "SELECT id FROM area"
 setDisableTrigger = "SET @DISABLE_TRIGGER=%s"
-setDisableKeys = "ALTER TABLE job_detail DISABLE KEYS;"
-setEnableKeys = "ALTER TABLE job_detail ENABLE KEYS;"
+setDisableKeys = "ALTER TABLE %s DISABLE KEYS;"
+setEnableKeys = "ALTER TABLE %s ENABLE KEYS;"
 setAutocommit = "SET autocommit=%s"
 setUniqueChecks = "SET unique_checks=%s"
 setForeignKeyChecks = "SET foreign_key_checks=%s"
 getRestaurantsAreaId = "SELECT a.area_id as id FROM restaurant r JOIN address a ON a.id = r.address_id WHERE r.id = %s"
-insertIntoAggregateHourlyJobs = "INSERT INTO aggregate_hourly_jobs (area_id, start_hour, count_of_jobs) VALUES (%s, %s, %s);"
+insertIntoAggregateHourlyJobs = "INSERT INTO %s (area_id, start_hour, count_of_jobs) VALUES (%s, %s, %s);"
+
+
 allDrivers = "SELECT * FROM driver"
 getCountOfPendingJobs = "SELECT count(*) as count FROM job j " \
                         "JOIN job_detail jd on jd.id = j.job_detail_id " \
