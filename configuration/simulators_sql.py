@@ -38,3 +38,5 @@ updateDriverLocation = "INSERT INTO driver_location (driver_id, coordinates) " \
                      "ON DUPLICATE KEY UPDATE coordinates=VALUES(coordinates)"
 createUser = "INSERT INTO user (email, first_name, last_name) VALUES (%s, %s, %s)"
 createDriver = "INSERT INTO driver (user_id, first_name, last_name, mobile_number) VALUES (%s, %s, %s, %s)"
+createAddress = "INSERT INTO address (street, map_point) VALUES (%s, GEOMFROMTEXT(%s))"
+createCustomer = "INSERT INTO customer (first_name, last_name, address_id, mobile_number) VALUES (%s, %s, %s, %s)"
