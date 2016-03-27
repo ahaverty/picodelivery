@@ -27,6 +27,7 @@ startHour = "startHour"
 config = configHelper.getConfig("../project_config.ini")
 
 swarmLimit = int(config.get('simulator_jobs', 'swarmLimit'))
+swarmMinimum = int(config.get('simulator_jobs', 'swarmMinimum'))
 
 
 def main(argv):
@@ -52,14 +53,20 @@ def main(argv):
     if not modelsParamExists(areaId):
         # delay triggering of each area to avoid collisions on this check
         if not swarmInProgress(connection):
-            # Publish that the swarm process has begun
-            publishSwarmingStatusToDb(connection, areaId, True)
 
-            generateAggregateDataFileAndStructure(connection, areaId, swarmLimit)
-            triggerSwarmAndWait(areaId)
+            # TODO check there is enough data to swarm on first.
+            if hasEnoughRowsToSwarm(connection, areaId, swarmMinimum):
+                # Publish that the swarm process has begun
+                publishSwarmingStatusToDb(connection, areaId, True)
 
-            # Publish that the swarm process is complete
-            publishSwarmingStatusToDb(connection, areaId, False)
+                generateAggregateDataFileAndStructure(connection, areaId, swarmLimit)
+                triggerSwarmAndWait(areaId)
+
+                # Publish that the swarm process is complete
+                publishSwarmingStatusToDb(connection, areaId, False)
+            else:
+                log.warning("Not enough rows to swarm on area %s. Exiting controller.py" % areaId)
+                sys.exit(15)
         else:
             log.warning("Another process is currently swarming, only one swarm can run at a time. [%s]" % areaId)
             log.warning("Therefore exiting controller.py")
@@ -96,6 +103,17 @@ def modelsParamExists(areaId):
     modelParamExpectedPath = "../area_data/area_" + str(areaId) + "/model_params.py"
     return os.path.isfile(modelParamExpectedPath)
 
+
+def hasEnoughRowsToSwarm(connection, areaId, minimumRows=2300):
+    cursor = connection.cursor()
+    cursor.execute(predictions_run_sql.areaHasEnoughRowsToSwarm, (areaId))
+    row = cursor.fetchone()
+    areaRowCount = row['count']
+    if areaRowCount >= minimumRows:
+        return True
+    else:
+        log.warning("Area %s has only %s rows of data." % (areaId, areaRowCount))
+        return False
 
 def swarmInProgress(connection, hoursBeforeIgnoring=4):
     '''
