@@ -26,3 +26,5 @@ areasAggregates = "SELECT 'timestamp','numberOfDeliveries' " \
                   "FROM aggregate_hourly_jobs " \
                   "WHERE area_id = %s " \
                   "LIMIT %s"
+
+areaHasEnoughRowsToSwarm = "SELECT count(*) as count FROM aggregate_hourly_jobs where area_id = %s"

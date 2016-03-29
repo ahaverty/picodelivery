@@ -104,7 +104,7 @@ def modelsParamExists(areaId):
     return os.path.isfile(modelParamExpectedPath)
 
 
-def hasEnoughRowsToSwarm(connection, areaId, minimumRows=2300):
+def hasEnoughRowsToSwarm(connection, areaId, minimumRows=1000):
     cursor = connection.cursor()
     cursor.execute(predictions_run_sql.areaHasEnoughRowsToSwarm, (areaId))
     row = cursor.fetchone()

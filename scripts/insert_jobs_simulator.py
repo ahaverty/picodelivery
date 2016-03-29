@@ -54,7 +54,8 @@ def main():
         cursor = connection.cursor()
 
         insertNonExistingJobDetailsFromSimulatedTable(cursor)
-
+        log.debug("Committing.")
+        connection.commit()
     except Exception, e:
         log.error(
             "Exception occurred while inserting job_details from job_details simulated table, closing connection.")
@@ -77,7 +78,10 @@ def getLastSimulatedCreateTime(cursor):
     """
     cursor.execute(simulators_sql.getLastJobDetailTimeSimulated)
     row = cursor.fetchone()
-    return row['create_time']
+    if row != None:
+        return row['create_time']
+    else:
+        return "1980-01-01"
 
 
 def copySimulatedRows(cursor, fromTime):
