@@ -1,8 +1,9 @@
 """
-Purpose:
-Instantiated hourly
-Trigger the run (or swarm if no modelparams exists)
-for each area and its data (only its past unpredicted data) in the db
+The trigger run script is the main script called by the crontab
+It will instantiate the controller.py script on each of the area ids found in the database
+The controller.py scripts are called as subprocesses from here.
+
+@author alanhaverty@student.dit.ie
 """
 
 import os
@@ -16,6 +17,13 @@ config = configHelper.getConfig("../project_config.ini")
 usage = "Usage: trigger_run.py"
 
 def main(argv):
+    """
+    Get all the area ids and trigger the controller.py scripts as a subprocess for each
+    (A delay of 4 seconds is added between each controller to ensure that the swarm-in-progress
+    flag is not added multiple times)
+    :param argv:
+    :return:
+    """
     connection = databaseHelper.getDbConnection(config)
     areaIds = getAreaIdsFromDatabase(connection)
 
@@ -36,6 +44,11 @@ def printUsageAndExit(exitCode):
 
 
 def getAreaIdsFromDatabase(connection):
+    """
+    Get all the area ids from the database
+    :param connection:
+    :return:
+    """
     areaIds = []
 
     try:

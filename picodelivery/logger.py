@@ -1,3 +1,8 @@
+"""
+Logger helper class used throughout the project
+@author alanhaverty@student.dit.ie
+"""
+
 import logging
 import os
 import time

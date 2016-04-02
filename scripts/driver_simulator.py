@@ -1,12 +1,15 @@
 #!/usr/bin/python
-'''
-Update the job times and statuses to simulate drivers accepting and completing jobs.
-Also update the areas with recent online drivers to allow simulating the heatmap algorithm
-'''
+"""
+Update existing job times and statuses to simulate drivers accepting and completing jobs.
+Also update the areas with recent online drivers to allow simulating the Hotspot Map algorithm
+
+Script should be run on crontab regularly to simulate realistic drivers and jobs in the system
+
+@author alanhaverty@student.dit.ie
+"""
 
 from configuration import simulators_sql
 from picodelivery import configHelper, databaseHelper
-from datetime import datetime, timedelta
 from random import randint
 import math
 
@@ -19,7 +22,8 @@ config = configHelper.getConfig("../project_config.ini")
 
 
 def main():
-    # Setup 'period', how often this program is ran per hour (e.g 1=every minute, 2=once every two minutes), to determine how often new drivers should be added
+    # period, i.e. how often this program is ran per hour
+    # (e.g 1=every minute, 2=once every two minutes), to determine how often new drivers should be added
     period = 1
 
     connection = None
@@ -44,6 +48,11 @@ def main():
 
 
 def getRateOfJobsFromSimulationAggTable(cursor, period):
+    """
+    Get the rate of which the simulated jobs table has stored
+    :param period:
+    :return:
+    """
     dateFormat = "%Y-%m-%d %H:00:00"
     cursor.execute(simulators_sql.getAreaJobRateFromSimAgg, (period, dateFormat))
     return cursor.fetchall()
@@ -61,10 +70,24 @@ def updateJobStatusesAndTimes(cursor):
 
 
 def getRandomDrivers(cursor, amount):
+    """
+    Get an amount of random drivers ids
+    :param cursor:
+    :param amount:
+    :return:
+    """
     cursor.execute(simulators_sql.getRandomDrivers, (amount))
     return cursor.fetchall()
 
 def touchNewDriversIntoArea(cursor, areaId, amountOfDrivers):
+    """
+    Simulate random drivers logging into the app, in an area
+    :param cursor:
+    :param areaId:
+    :param amountOfDrivers:
+    :return:
+    """
+
     #get amount of random driver ids first.. (preferably ones not on jobs
     #Then update their locations to the centroid of the areas polygon (WATCH ASHTOWN CENTROID IS OUTSIDE OF POLY..)
     randomDrivers = getRandomDrivers(cursor, amountOfDrivers)

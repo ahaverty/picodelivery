@@ -1,14 +1,25 @@
 """
-Check whether modelparams exists for an area
+The controller takes in an area id and either makes the next prediction(s) it can,
+using the available aggregated count of jobs from the database
+passing it through NuPIC
+OR
+Triggers a swarm on the data if there is enough data to swarm upon
+(Swarming is how NuPIC trains a model)
+
+Overview of the controller:
+Get area id as a parameter
+Check whether modelparams file exists for the area
     modelparams found:
         look for savemodel or modelparams
-            run on latest data
+            predict latest data and save
 
     modelparams not found:
         check if a process is currently swarming
             exit if it is
-        otherwise, start a swarm, adding a row to say already swarming
-            then go back and look for model params again
+        otherwise, start a swarm, and store swarm progress to the db
+            then go back and look for model params again, making a prediction.
+
+@author alanhavert@student.dit.ie
 """
 
 import os
@@ -31,7 +42,6 @@ swarmMinimum = int(config.get('simulator_jobs', 'swarmMinimum'))
 
 
 def main(argv):
-    # TODO use arg parser instead of manually converting arguments..
     if len(argv) < 1:
         printUsageAndExit(2)
     else:
@@ -54,11 +64,12 @@ def main(argv):
         # delay triggering of each area to avoid collisions on this check
         if not swarmInProgress(connection):
 
-            # TODO check there is enough data to swarm on first.
+            # check there is enough data to swarm on first.
             if hasEnoughRowsToSwarm(connection, areaId, swarmMinimum):
-                # Publish that the swarm process has begun
+                # Publish that the swarm process has begun to the db
                 publishSwarmingStatusToDb(connection, areaId, True)
 
+                # Generate a csv of the data to use in the swarm
                 generateAggregateDataFileAndStructure(connection, areaId, swarmLimit)
                 triggerSwarmAndWait(areaId)
 
@@ -72,6 +83,7 @@ def main(argv):
             log.warning("Therefore exiting controller.py")
             sys.exit(10)
 
+    #Trigger NuPIC to predict on the latest area aggregated data
     runOnLatestData(connection, areaId, steps, absPathAndVerify(modelParamsPath), absPath(savedModelsPath))
 
     log.info("Committing and closing the database connection.")
@@ -86,10 +98,20 @@ def printUsageAndExit(exitCode):
 
 
 def absPath(path):
+    """
+    Get the absolute path of the provided relative path
+    :param path:
+    :return:
+    """
     return str(os.path.abspath(path))
 
 
 def absPathAndVerify(path):
+    """
+    Get the absolute path and verify it exists or exit program
+    :param path:
+    :return:
+    """
     absolutePath = absPath(path)
     if os.path.exists(absolutePath):
         return absolutePath
@@ -99,12 +121,23 @@ def absPathAndVerify(path):
 
 
 def modelsParamExists(areaId):
-    # TODO define this path better, somewhere more visible...
+    """
+    Check if the model parameter file exists and return true or false
+    :param areaId:
+    :return: True if model params exists, false otherwise
+    """
     modelParamExpectedPath = "../area_data/area_" + str(areaId) + "/model_params.py"
     return os.path.isfile(modelParamExpectedPath)
 
 
 def hasEnoughRowsToSwarm(connection, areaId, minimumRows=1000):
+    """
+    Check if the area has the minimum amount of rows to perform a swarm
+    (Too few rows in a swarm will result in a weak model)
+    :param areaId:
+    :param minimumRows:
+    :return:
+    """
     cursor = connection.cursor()
     cursor.execute(predictions_run_sql.areaHasEnoughRowsToSwarm, (areaId))
     row = cursor.fetchone()
@@ -144,6 +177,14 @@ def swarmInProgress(connection, hoursBeforeIgnoring=4):
 
 
 def publishSwarmingStatusToDb(connection, areaId, status):
+    """
+    Publish that a swarm is in progress to the db, to ensure no other process
+    starts the same swarm. (NuPIC recommends only running one swarm at a time)
+    :param connection:
+    :param areaId:
+    :param status:
+    :return:
+    """
     if status is True:
         inProgress = 1
     else:
@@ -183,6 +224,11 @@ def generateAggregateDataFileAndStructure(connection, areaId, limit):
 
 
 def triggerSwarmAndWait(areaId):
+    """
+    Trigger a swarm, using the swarm.py script and wait for it to finish
+    :param areaId:
+    :return:
+    """
     log.info("Starting swarm process on area with id %s, which may take awhile." % areaId)
     log.info("Adding details of the instantiated swarm process to the database "
              "to ensure no overlapping processes start.")
@@ -208,6 +254,17 @@ def triggerSwarmAndWait(areaId):
 
 
 def runOnLatestData(connection, areaId, steps, modelParamsPath, savedModelsPath):
+    """
+    Initialise NuPIC to predict on an areas latest aggregated data.
+    Save model to file once completed
+    :param connection:
+    :param areaId:
+    :param steps:
+    :param modelParamsPath:
+    :param savedModelsPath:
+    :return:
+    """
+
     # Initialise nupic/run.py
     nupic = picodelivery.prediction.run.Run(modelParamsPath, savedModelsPath, steps)
 
@@ -233,11 +290,25 @@ def runOnLatestData(connection, areaId, steps, modelParamsPath, savedModelsPath)
 
 
 def savePredictionToDatabase(connection, areaId, startHour, predictedValue):
+    """
+    Save a predicted row to the database
+    :param connection:
+    :param areaId:
+    :param startHour:
+    :param predictedValue:
+    :return:
+    """
     cursor = connection.cursor()
     cursor.execute(predictions_run_sql.insertPredictionResult, (areaId, startHour, float(predictedValue)))
 
 
 def getRowsWithoutPredictions(connection, areaId):
+    """
+    Get any rows that are yet to have predictions made
+    :param connection:
+    :param areaId:
+    :return:
+    """
     rowsWithoutPredictions = []
 
     cursor = connection.cursor()

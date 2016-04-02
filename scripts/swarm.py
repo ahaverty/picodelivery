@@ -1,7 +1,10 @@
 """
 Used to create a model for the run program using NuPIC.
-Should be able to dynamically swarm between areas.
-Should be provided with just the areas id number and the rest can be selected from there..
+When triggered, the swarm will look for the csv file containing
+the aggregated data.
+This should have a few thousand rows of data, but no more than 3000
+(As recommended by NuPIC)
+@author alanhaverty@student.dit.ie
 """
 import json
 import os
@@ -77,6 +80,13 @@ def modelParamsToString(modelParams):
 
 
 def writeModelParamsToFile(modelParams, outputDir):
+    """
+    Save the model parameters data to a file
+    (This is later used by the nupic 'run' predictor to create a model from)
+    :param modelParams:
+    :param outputDir:
+    :return:
+    """
     paramsName = "model_params.py"
     outputFilePath = os.path.join(outputDir, paramsName)
 
@@ -91,8 +101,12 @@ def swarmForBestModelParams(swarmConfig, areaDirPath, areaId, maxWorkers=4):
     """
     Trigger the swarm passing the configuration file to the permutation runner in NuPIC.
     Also trigger the writing of the resultant model params file
+    :param swarmConfig:
+    :param areaDirPath:
+    :param areaId:
+    :param maxWorkers:
+    :return:
     """
-    # TODO Check this is correct naming..
     outputLabel = "model_params"
 
     # Define where the work will take place (Should be in the area1 folder, in a tmp_work folder?)
@@ -125,6 +139,12 @@ def createDirIfNotExisting(dir):
 
 
 def swarm(areaId, areaDirPath):
+    """
+    Main trigger that calls the swarming functionality on the areaid and its directory path
+    :param areaId:
+    :param areaDirPath:
+    :return:
+    """
     log.info("Running a %s sized swarm for area %s" % (SWARM_DESCRIPTION["swarmSize"], areaId))
 
     modelParamsFilePath = swarmForBestModelParams(SWARM_DESCRIPTION, areaDirPath, areaId)

@@ -1,9 +1,21 @@
-'''
+"""
+
+Simulator which creates job details (driver requests)
+Simulator looks at all the restaurants in the database
+Decides on a size for the restaurant (ie. small, med, large..)
+Then creates jobs dispersed in a random manor, using the configuration as a
+reference on which hours and days are busiest (job rate curve)
+
+Overview:
 For each restaurant, get the details needed (id)
 Have a var set to define the date range to create jobs over
 Use an array for the range of jobs that should be created for each hour/day (1 array for day, 1 for hours)
-Restaurants should probably differ in size, set a restaurant with a size between some range and multiply the amount of jobs by it? 1 - 2 (Shouldn't change for the restaurant once set!!!!)
-'''
+Restaurants should probably differ in size, set a restaurant
+with a size between some range and multiply the amount of jobs by it?
+
+@author alanhaverty@student.dit.ie
+"""
+
 
 import sys
 import traceback
@@ -88,7 +100,7 @@ def main():
     numberOfRestaurants = len(restaurantIds)
     totalDaysDifference = abs((endDate - startDate).days)
 
-
+    # Get an estimation on how many rows and how long the script will take to complete
     estimateTotalRows = estimateTotalInsertRows(numberOfRestaurants, startDate, endDate)
 
     log.info("Estimating {:,} total rows, for {:,} restaurants over {:,} days.".format(int(estimateTotalRows), numberOfRestaurants, totalDaysDifference))
@@ -177,6 +189,14 @@ def queryYesNo(question, default="yes"):
 
 
 def estimateTotalInsertRows(numberOfRestaurants, startDate, endDate) :
+    """
+    Estimate of how many rows will be inserted into the database
+    Handy to debug before running the long script!
+    :param numberOfRestaurants:
+    :param startDate:
+    :param endDate:
+    :return:
+    """
     avgSize = ((minSize + maxSize) / 2)
     avgVariance = ((minVariance + maxVariance) /2)
     avgMultiplier = multiplier * avgSize * avgVariance
@@ -205,6 +225,11 @@ def estimateTotalInsertRows(numberOfRestaurants, startDate, endDate) :
 
 
 def getAllRestaurantIdsFromDb(cursor):
+    """
+    Get the ids of all the restaurants from the database
+    :param cursor:
+    :return:
+    """
     restaurantIds = []
 
     cursor.execute(simulators_sql.allRestaurantIds)
@@ -218,11 +243,14 @@ def getAllRestaurantIdsFromDb(cursor):
 
 
 def setDatabaseForBulkInserts(cursor, state):
-    '''
+    """
     Setup the database for bulk inserting/efficiency
-    True to turn setup for bulk inserts, false to undo
+    i.e. disable triggers and keys to avoid more work for the db
+    (Triggers should also be simulated elsewhere)
+    :param cursor:
+    :param state: True to turn setup for bulk inserts, false to undo
     :return:
-    '''
+    """
 
     if state:
         value = 0
@@ -330,6 +358,12 @@ def insertManyJobDetailEntriesToDb(cursor, data):
 
 
 def getRestaurantsAreaId(cursor, restaurantId):
+    """
+    Gets the areaid of the area in which the restaurant resides.
+    :param cursor:
+    :param restaurantId:
+    :return:
+    """
     cursor.execute(simulators_sql.getRestaurantsAreaId, restaurantId)
 
     row = cursor.fetchone()
@@ -338,6 +372,11 @@ def getRestaurantsAreaId(cursor, restaurantId):
 
 
 def getAreaIdsFromDatabase(cursor):
+    """
+    Get all the area ids from the database
+    :param cursor:
+    :return:
+    """
     areaIds = []
 
     cursor.execute(simulators_sql.allAreaIds)
@@ -351,6 +390,13 @@ def getAreaIdsFromDatabase(cursor):
 
 
 def manuallyInsertAggregateHourlyJobs(cursor, areaHourlyJobCount):
+    """
+    Manually insert the aggregates job counts that the triggers would have done otherwise
+    (Triggers were disabled for efficiency, therefore need to insert these rows in bulk manually now)
+    :param cursor:
+    :param areaHourlyJobCount:
+    :return:
+    """
     log.info("Beginning manual inserts for aggregate hourly jobs")
     log.debug("Found %s areas" % (len(areaHourlyJobCount)))
 

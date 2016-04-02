@@ -1,5 +1,10 @@
 #!/bin/bash
 
+#Script for running the job simulator python script
+#This script uses flock, to with a timeout to make sure its only ever running once
+#Flock was used as crontab will only run once a minute, therefore used a 30sec wait on crontab with two duplicate jobs
+#@author alanhaverty@student.dit.ie
+
 scriptDir="/home/picodelivery/picodelivery/scripts"
 logDir=$scriptDir"/logs"
 crontabLogDir=$logDir"/crontab"

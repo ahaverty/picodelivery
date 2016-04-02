@@ -1,3 +1,9 @@
+"""
+Simple database helper class for returning a database connection,
+taking the congfiguration from the provided config file path
+@author alanhaverty@student.dit.ie
+"""
+
 import pymysql
 
 

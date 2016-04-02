@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Script to start the trigger_run.py python script
+# author alanhaverty@student.dit.ie
+
 scriptDir="/home/picodelivery/picodelivery/scripts"
 logDir=$scriptDir"/logs"
 crontabLogDir=$logDir"/crontab"

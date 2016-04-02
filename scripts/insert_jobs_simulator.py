@@ -1,6 +1,8 @@
 '''
-Look at current time, look at whats in the job detail table and compare to whats in the simulated job detail table
-Add whatever is not already in there..
+Using a table of simulated job details, copy across the jobs into the 'real' jobs table, where date < now
+This therefore simulates restaurants creating job requests for drivers.
+
+@author alanhaverty@student.dit.ie
 '''
 
 import sys
