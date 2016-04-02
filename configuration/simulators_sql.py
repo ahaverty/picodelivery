@@ -54,7 +54,7 @@ updateJobStatusesAndTimes = "SET @DRIVER_MIN = 36; SET @DRIVER_MAX = 345; " \
                             "SET @MIN_DELIVER = 200; SET @MAX_DELIVER = 600; " \
                             "UPDATE job " \
                             "SET start_time =  " \
-                            "DATE_ADD(create_time, INTERVAL (@START_INTERVAL := ROUND(RAND() * (@MAX_START - @MIN_START) + @MIN_START)) SECOND), " \
+                            "DATE_ADD(create_time, INTERVAL (ROUND(RAND() * (@MAX_START - @MIN_START) + @MIN_START)) SECOND), " \
                             "status_id = 2, " \
                             "driver_id = ROUND(RAND() * (@DRIVER_MAX - @DRIVER_MIN) + @DRIVER_MIN) " \
                             "WHERE status_id = 1 " \
@@ -72,7 +72,7 @@ updateJobStatusesAndTimes = "SET @DRIVER_MIN = 36; SET @DRIVER_MAX = 345; " \
                             "status_id = 4 " \
                             "WHERE status_id = 3  " \
                             "AND driver_id BETWEEN @DRIVER_MIN AND @DRIVER_MAX " \
-                            "AND payload_collected_time < DATE_SUB(now(), INTERVAL @MAX_DELIVER SECOND);"
+                            "AND payload_collected_time < DATE_SUB(now(), INTERVAL @MAX_DELIVER SECOND); "
 
 getAreaJobRateFromSimAgg = "SELECT count_of_jobs/(60/%s) as rate, area_id " \
                            "from simulated_aggregate_hourly_jobs " \
